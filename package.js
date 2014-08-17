@@ -3,6 +3,8 @@ Package.describe({
 });
 
 Package.on_use(function(api) {
+  api.use(['underscore', 'lodash'], ['client', 'server']);
+  api.use(['deps', 'autoform', 'templating', 'jquery'], 'client');
   api.export([
     'Booleans', 'Collections', 'Objects', 'Setter', 'Strings', 'Types'
   ], ['client', 'server']);
