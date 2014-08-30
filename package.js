@@ -1,10 +1,11 @@
 Package.describe({
+  name: "utility",
   summary: "A collection of utility modules"
 });
 
 Package.on_use(function(api) {
   api.use(['coffeescript', 'underscore', 'lodash'], ['client', 'server']);
-  api.use(['deps', 'autoform', 'templating', 'jquery'], 'client');
+  api.use(['deps', 'templating', 'jquery'], 'client');
   api.export([
     'Arrays', 'Booleans', 'Collections', 'Objects', 'Setter', 'Strings', 'Types'
   ], ['client', 'server']);

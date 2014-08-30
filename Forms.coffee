@@ -1,4 +1,4 @@
-@Forms =
+Forms =
 
   FIELD_SELECTOR: '.form-group',
 

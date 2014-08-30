@@ -1,6 +1,6 @@
 deep = (value, other) -> lodash.merge(value, other, deep)
 
-@Setter =
+Setter =
 
   merge: (args...) ->
     dest = args[0]

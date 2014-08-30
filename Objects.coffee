@@ -1,4 +1,4 @@
-@Objects =
+Objects =
 
   # Adds the given keys recursively, where each index in the array is a property to a separate
   # object. The final key is used to set the given value.

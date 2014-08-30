@@ -1,4 +1,4 @@
-@Window =
+Window =
 
   addSlash: (str) ->
     str.replace(/(?!\/)(.)$/, '$1/')

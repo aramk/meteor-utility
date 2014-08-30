@@ -1,4 +1,4 @@
-@Arrays =
+Arrays =
 
   getRandomIndex: (array) ->
     index = Math.floor(Math.random() * array.length)

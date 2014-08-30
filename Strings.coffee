@@ -1,4 +1,4 @@
-@Strings =
+Strings =
 
 # @returns {String} The string converted to title case.
   toTitleCase: (str) ->

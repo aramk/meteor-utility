@@ -1,4 +1,4 @@
-@Booleans =
+Booleans =
 
   parse: (obj) ->
     if Types.isBoolean(obj)
