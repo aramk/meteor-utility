@@ -67,3 +67,19 @@ Collections =
 
   createTemporary: ->
     new Meteor.Collection(null)
+
+  moveDoc: (id, sourceCollection, destCollection) ->
+    order = sourceCollection.findOne(id)
+    unless order
+      throw new Error('Could not find doc with id ' + id + ' in collection ' + sourceCollection)
+    destCollection.insert order, (err, result) ->
+      if err
+        throw new Error('Failed to insert into destination collection when moving')
+      else
+        sourceCollection.remove id, (err2, result2) ->
+          if err2
+            throw new Error('Failed to remove from source collection when moving')
+
+  removeAllDocs: (collection) ->
+    _.each collection.find().fetch(), (order) ->
+      collection.remove(order._id)
