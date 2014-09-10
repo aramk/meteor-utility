@@ -20,13 +20,22 @@ Collections =
   get: (arg) ->
     if Types.isString(arg)
       # Collection name.
-      return global[arg]
+      global[arg]
     else if @isCursor(arg)
-      return arg.collection
+      arg.collection
     else if @isCollection(arg)
-      return arg
+      arg
     else
-      return null
+      null
+
+# @param {String|Meteor.Collection|Cursor} arg
+# @returns The underlying Cursor or null if none is found.
+  getCursor: (arg) ->
+    if @isCursor(arg)
+      arg
+    else
+      collection = @get(arg)
+      collection.find()
 
 # @param {String|Meteor.Collection|Cursor} arg
 # @returns {Meteor.Collection|Cursor} Either a Meteor collection, a cursor, or null if none is
@@ -83,3 +92,24 @@ Collections =
   removeAllDocs: (collection) ->
     _.each collection.find().fetch(), (order) ->
       collection.remove(order._id)
+
+# @param {Meteor.Collection|Cursor|String} arg
+# @param {Object} args
+# @param {Function} [args.added]
+# @param {Function} [args.changed]
+# @param {Function} [args.removed]
+# @param {Boolean} [args.ignoreExisting=false] - Doesn't fire the insert() callback for existing
+# items in the collection.
+  observe: (collection, args) ->
+    args ?= {}
+    isObserving = !args.ignoreExisting
+    wrapHandler = (handler) -> -> handler.apply(@, arguments) if isObserving
+    observeArgs = {}
+    _.each ['added', 'changed', 'removed'], (methodName) ->
+      handler = args[methodName]
+      if handler
+        observeArgs[methodName] = wrapHandler(handler)
+    @getCursor(collection).observe(observeArgs)
+    # TODO(aramk) Temporary solution to prevent refreshing due to added callback firing for all
+    # existing docs.
+    isObserving = true
