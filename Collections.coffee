@@ -102,7 +102,7 @@ Collections =
 # items in the collection.
   observe: (collection, args) ->
     args ?= {}
-    isObserving = !args.ignoreExisting
+    isObserving = args.ignoreExisting == false
     wrapHandler = (handler) -> -> handler.apply(@, arguments) if isObserving
     observeArgs = {}
     _.each ['added', 'changed', 'removed'], (methodName) ->
