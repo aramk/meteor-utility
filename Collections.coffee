@@ -101,6 +101,14 @@ Collections =
 # @param {Boolean} [args.ignoreExisting=false] - Doesn't fire the insert() callback for existing
 # items in the collection.
   observe: (collection, args) ->
+    if Meteor.isClient
+      # On the client the collection may still be syncing, so wait until the publish is ready.
+      Meteor.subscribe @getName(collection), =>
+        @_observe(collection, args)
+    else
+      @_observe(collection, args)
+
+  _observe: (collection, args) ->
     args ?= {}
     isObserving = args.ignoreExisting == false
     wrapHandler = (handler) -> -> handler.apply(@, arguments) if isObserving
