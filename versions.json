@@ -41,10 +41,6 @@
       "1.0.0"
     ],
     [
-      "lodash",
-      "0.0.0"
-    ],
-    [
       "meteor",
       "1.1.1"
     ],
@@ -67,6 +63,10 @@
     [
       "reactive-var",
       "1.0.2"
+    ],
+    [
+      "stevezhu:lodash",
+      "0.1.0"
     ],
     [
       "templating",

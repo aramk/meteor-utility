@@ -3,8 +3,9 @@ Package.describe({
   summary: "A collection of utility modules"
 });
 
-Package.on_use(function(api) {
-  api.use(['coffeescript', 'underscore', 'lodash'], ['client', 'server']);
+Package.onUse(function(api) {
+  api.versionsFrom('METEOR@0.9.0');
+  api.use(['coffeescript', 'underscore', 'stevezhu:lodash'], ['client', 'server']);
   api.use(['deps', 'templating', 'jquery'], 'client');
   api.export([
     'Arrays', 'Booleans', 'Collections', 'Objects', 'Setter', 'Strings', 'Types'
@@ -12,11 +13,11 @@ Package.on_use(function(api) {
   api.export([
     'Forms', 'Window'
   ], 'client');
-  api.add_files([
+  api.addFiles([
     'Arrays.coffee', 'Booleans.coffee', 'Collections.coffee', 'Objects.coffee', 'Setter.coffee',
     'Strings.coffee', 'Types.coffee'
   ], ['client', 'server']);
-  api.add_files([
+  api.addFiles([
     'Forms.coffee', 'Window.coffee'
   ], 'client');
 });
