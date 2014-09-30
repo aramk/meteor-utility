@@ -121,3 +121,13 @@ Collections =
     # TODO(aramk) Temporary solution to prevent refreshing due to added callback firing for all
     # existing docs.
     isObserving = true
+
+# @param {Array.<Meteor.Collection>} collections
+# @returns {Object.<String, Meteor.Collection>} A map of collection name to object for the given
+# collections.
+  getMap: (collections) ->
+    collectionMap = {}
+    _.each collections, (collection) =>
+      name = @getName(collection)
+      collectionMap[name] = collection
+    collectionMap
