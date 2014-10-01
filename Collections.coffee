@@ -98,29 +98,24 @@ Collections =
 # @param {Function} [args.added]
 # @param {Function} [args.changed]
 # @param {Function} [args.removed]
-# @param {Boolean} [args.ignoreExisting=false] - Doesn't fire the insert() callback for existing
-# items in the collection.
   observe: (collection, args) ->
-    if Meteor.isClient
-      # On the client the collection may still be syncing, so wait until the publish is ready.
-      Meteor.subscribe @getName(collection), =>
-        @_observe(collection, args)
-    else
-      @_observe(collection, args)
-
-  _observe: (collection, args) ->
+    observing = false
     args ?= {}
-    isObserving = args.ignoreExisting == false
-    wrapHandler = (handler) -> -> handler.apply(@, arguments) if isObserving
+    createHandler = (handler) ->
+      -> handler.apply(@, arguments) if observing
     observeArgs = {}
     _.each ['added', 'changed', 'removed'], (methodName) ->
       handler = args[methodName]
       if handler
-        observeArgs[methodName] = wrapHandler(handler)
-    @getCursor(collection).observe(observeArgs)
-    # TODO(aramk) Temporary solution to prevent refreshing due to added callback firing for all
-    # existing docs.
-    isObserving = true
+        observeArgs[methodName] = createHandler(handler)
+    handle = @getCursor(collection).observe(observeArgs)
+    # If on the client, wait for the collection subscription to finish to avoid triggering
+    # the create handler as new items are added.
+    if Meteor.isClient
+      Meteor.subscribe @getName(collection), -> observing = true
+    else
+      observing = true
+    handle
 
 # @param {Array.<Meteor.Collection>} collections
 # @returns {Object.<String, Meteor.Collection>} A map of collection name to object for the given
