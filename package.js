@@ -9,7 +9,7 @@ Package.onUse(function(api) {
   api.versionsFrom('METEOR@0.9.0');
   api.use(['coffeescript', 'underscore', 'stevezhu:lodash@0.2.0'], ['client', 'server']);
   api.use(['deps', 'templating', 'jquery'], 'client');
-  api.use(['aldeed:autoform', 'mrt:moment'], 'client', {weak: true});
+  api.use(['aldeed:autoform@3.2.0', 'mrt:moment@2.8.1'], 'client', {weak: true});
   api.export([
     'Arrays', 'Booleans', 'Collections', 'Dates', 'Objects', 'Setter', 'Strings', 'Types'
   ], ['client', 'server']);
