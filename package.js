@@ -1,7 +1,7 @@
 Package.describe({
   name: 'aramk:utility',
   summary: 'A collection of utility modules',
-  version: '0.1.0',
+  version: '0.2.0',
   git: 'https://github.com/aramk/meteor-utility.git'
 });
 
@@ -14,13 +14,19 @@ Package.onUse(function(api) {
     'Arrays', 'Booleans', 'Collections', 'Dates', 'Objects', 'Setter', 'Strings', 'Types'
   ], ['client', 'server']);
   api.export([
-    'Forms', 'Window'
+    'Buffers'
+  ], 'server');
+  api.export([
+    'Blobs', 'Forms', 'Window'
   ], 'client');
   api.addFiles([
     'Arrays.coffee', 'Booleans.coffee', 'Collections.coffee', 'Dates.coffee', 'Objects.coffee',
     'Setter.coffee', 'Strings.coffee', 'Types.coffee'
   ], ['client', 'server']);
   api.addFiles([
-    'Forms.coffee', 'Window.coffee'
+    'Blobs.coffee', 'Forms.coffee', 'Window.coffee'
   ], 'client');
+  api.addFiles([
+    'Buffers.coffee'
+  ], 'server');
 });

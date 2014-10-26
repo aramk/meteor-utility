@@ -128,3 +128,6 @@ Collections =
       name = @getName(collection)
       collectionMap[name] = collection
     collectionMap
+
+# @returns {String} Generates a MongoDB ObjectID hex string.
+  generateId: -> new Mongo.ObjectID().toHexString()
