@@ -32,9 +32,27 @@ Forms =
         args = arguments
         console.debug 'onSuccess', args, @
         AutoForm.resetForm(name)
+        # TODO(aramk) For some reason, template.data.doc is sometimes modified (_id and other fields
+        # are missing), so we store the doc elsewhere and provide it here.
+        data = template.data
+        _doc = data.settings?._doc
+        if _doc
+          data.doc = _doc
         result = formArgs.onSuccess?.apply(@, args)
         callback = -> template.data?.settings?.onSuccess?.apply(@, args)
         deferCallback(result, callback)
+
+      onError: (operation, error, template) ->
+        console.error('Error submitting form', operation, error, template)
+        throw new Error(error)
+
+      before:
+        insert: (doc, template) ->
+          console.debug('before insert', doc)
+          doc
+        update: (docId, modifier, template) ->
+          console.debug('before update', docId, modifier)
+          modifier
 
     if formArgs.hooks?
       AutoForm.addHooks name, formArgs.hooks
@@ -48,13 +66,17 @@ Forms =
       formTitle: ->
         collectionName = Collections.getTitle(formArgs.collection)
         (if @doc then 'Edit' else 'Create') + ' ' + Strings.singular(collectionName)
-      formType: -> if @doc then 'update' else 'insert'
+      formType: ->
+        console.log('doc', @doc)
+        type = if @doc then 'update' else 'insert'
+        console.log('doc', @doc, 'type', type)
+        type
       submitText: -> if @doc then 'Save' else 'Create'
       settings: -> Forms.preventText(@settings) if @settings?
 
     Form.events
       'click button.cancel': (e, template) ->
-        e.preventDefault();
+        e.preventDefault()
         console.debug 'onCancel', arguments, @
         formArgs.onCancel?(template)
         template.data?.settings?.onCancel?()
@@ -65,65 +87,60 @@ Forms =
     Form.rendered = ->
       console.debug 'Rendered form', @, arguments
       # Move the buttons to the same level as the title and content to allow using flex-layout.
-      $buttons = $(@find('.crud.buttons'))
-      $crudForm = $(@find('.flex-panel'))
+      $buttons = @$('.crud.buttons')
+      $crudForm = @$('.flex-panel')
       if $buttons.length > 0 && $crudForm.length > 0
         $crudForm.append($buttons)
-      $('[type="submit"]', $buttons).click ->
-        $('form', $crudForm).submit();
+      @$('[type="submit"]', $buttons).click => @$('form', $crudForm).submit()
+      AutoForm.resetForm(name)
 
       collection = Collections.get(formArgs.collection)
-      schema = collection?._c2?._simpleSchema;
-      $schemaInputs = $(@findAll('[data-schema-key]'));
+      @schemaInputs = Forms.getSchemaInputs(@, collection)
 
-      if schema?
-        schemaInputs = {}
-        $schemaInputs.each ->
+      popupInputs = []
+      hasRequiredField = false
+      for key, input of @schemaInputs
+        $input = $(input.node)
+        field = input.field
+        desc = field.desc
+        # Add popups to the inputs contain definitions from the schema.
+        if desc?
+          popupInputs.push($input.data('desc', desc))
+        # Add units into labels
+        $label = @$('label[for="' + key + '"]')
+        if $label.length == 0
+          $parent = $input.parent()
+          if $parent.is('.dropdown')
+            $label = $parent.prev('label')
+
+        units = field.units
+        $labelContent = $('<div class="value">' + $label.html() + '</div>')
+        $label.empty()
+        $label.append($labelContent)
+        if units?
+          formattedUnits = Strings.format.scripts(units)
+          $units = $('<div class="units">' + formattedUnits + '</div>')
+          $label.append($units)
+        required = field.optional == false
+        if required
+          Forms.addRequiredLabel($label)
+          hasRequiredField = true
+
+      if hasRequiredField
+        @$('.ui.form.segment').append($('<div class="footer"><div class="required"></div>Required field</div>'))
+
+      addPopups = ->
+        $(popupInputs).each ->
           $input = $(@)
-          key = $input.attr('data-schema-key')
-          field = schema.schema(key)
-          if field
-            schemaInputs[key] =
-              node: @
-              key: key
-              field: field
-          else
-            console.warn('Unrecognised data-schema-key', key, 'for schema', schema)
-        @schemaInputs = schemaInputs
+          $input.data('desc')
+          $input.popup('setting', delay: 500, content: $input.data('desc'))
 
-        popupInputs = []
-        for key, input of schemaInputs
-          $input = $(input.node)
-          field = input.field
-          desc = field.desc
-          # Add popups to the inputs contain definitions from the schema.
-          if desc?
-            popupInputs.push($input.data('desc', desc))
-          # Add units into labels
-          $label = $input.siblings('label')
-          units = field.units
-          if units?
-            formattedUnits = Strings.format.scripts(units)
-            $units = $('<div class="units">' + formattedUnits + '</div>');
-            $labelContent = $('<div class="value">' + $label.html() + '</div>')
-            $label.empty()
-            $label.append($labelContent).append($units)
+      removePopups = ->
+        $(popupInputs).popup('destroy')
 
-        addPopups = =>
-          $(popupInputs).each ->
-            $input = $(@)
-            $input.data('desc')
-            $input.popup('setting', delay: 500, content: $input.data('desc'))
-
-        removePopups = =>
-          $(popupInputs).popup('destroy')
-
-        Deps.autorun (c) =>
-          if @.isDestroyed?
-            c.stop()
-          else
-            helpMode = Session.get 'helpMode'
-            if helpMode then addPopups() else removePopups()
+      @autorun (c) ->
+        helpMode = Session.get 'helpMode'
+        if helpMode then addPopups() else removePopups()
       formArgs.onRender?.apply(@, arguments)
 
     Form.destroyed = ->
@@ -132,7 +149,11 @@ Forms =
       template.isDestroyed = true
       formArgs.onDestroy?.apply(@, arguments)
 
-    Form
+    return Form
+
+  addRequiredLabel: ($label) ->
+    $requiredContent = $('<div class="required"></div>')
+    $label.append($requiredContent)
 
 # We may pass the temporary collection as an attribute to autoform templates, so we need to
 # define this to avoid errors since it is passed into the actual <form> HTML object.
@@ -142,3 +163,21 @@ Forms =
 
   findFieldInput: (template, name) ->
     template.find('[name="' + name + '"]')
+
+  getSchemaInputs: (template, collection) ->
+    $schemaInputs = template.$('[data-schema-key]')
+    schema = collection.simpleSchema()
+    schemaInputs = {}
+    if schema?
+      $schemaInputs.each ->
+        $input = $(@)
+        key = $input.attr('data-schema-key')
+        field = schema.schema(key)
+        if field
+          schemaInputs[key] =
+            node: @
+            key: key
+            field: field
+        else
+          console.warn('Unrecognised data-schema-key', key, 'for schema', schema)
+    schemaInputs

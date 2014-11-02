@@ -131,3 +131,27 @@ Collections =
 
 # @returns {String} Generates a MongoDB ObjectID hex string.
   generateId: -> new Mongo.ObjectID().toHexString()
+
+# @param {Object} doc
+# @param {Object} modifier - A MongoDB modifier object.
+# @returns {Object} A copy of the given doc with the given modifier updates applied.
+  simulateModifierUpdate: (doc, modifier) ->
+    tmpCollection = @createTemporary()
+    doc = Setter.clone(doc)
+    # This is synchronous since it's a local collection.
+    insertedId = tmpCollection.insert(doc)
+    tmpCollection.update(insertedId, modifier)
+    tmpCollection.findOne(insertedId)
+
+# @param {Meteor.Collection} collection
+# @param {Function} validate - A validation method which returns a string on failure or throws
+# an exception, which causes validation to fail and prevents insert() or update() on the collection
+# from completing.
+  addValidation: (collection, validate) ->
+    collection.before.insert (userId, doc) ->
+      inValid = validate(doc)
+      throw new Error(inValid) if inValid
+    collection.before.update (userId, doc, fieldNames, modifier) =>
+      doc = @simulateModifierUpdate(doc, modifier)
+      inValid = validate(doc)
+      throw new Error(inValid) if inValid
