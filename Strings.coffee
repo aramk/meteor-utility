@@ -11,6 +11,8 @@ Strings =
           title += ' '
     title
 
+  toSpaceSeparated: (str) -> str.replace(/[_-]+/g, ' ')
+
   firstToLowerCase: (str) ->
     str.replace /(^\w)/, (firstChar) -> firstChar.toLowerCase()
 
@@ -64,6 +66,7 @@ Strings =
     sup: (str) -> str.replace(/\^(\w+)/g, '<sup>$1</sup>')
     sub: (str) -> str.replace(/_(\w+)/g, '<sub>$1</sub>')
     scripts: (str) -> @.sup(@.sub(str))
+    percentage: (value, digits) -> (parseFloat(value) * 100).toFixed(digits ? 2) + '%'
 
   encodeUtf8: (str) -> unescape(encodeURIComponent(str))
 

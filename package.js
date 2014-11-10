@@ -1,7 +1,7 @@
 Package.describe({
   name: 'aramk:utility',
   summary: 'A collection of utility modules',
-  version: '0.2.1',
+  version: '0.3.0',
   git: 'https://github.com/aramk/meteor-utility.git'
 });
 
@@ -14,7 +14,7 @@ Package.onUse(function(api) {
   api.use(['aldeed:autoform@3.2.0', 'mrt:moment@2.8.1', 'matb33:collection-hooks@0.7.6'],
     'client', {weak: true});
   api.export([
-    'Arrays', 'Booleans', 'Collections', 'Dates', 'Objects', 'Setter', 'Strings', 'Types'
+    'Arrays', 'Booleans', 'Collections', 'Dates', 'Maths', 'Objects', 'Setter', 'Strings', 'Types'
   ], ['client', 'server']);
   api.export([
     'Buffers'
@@ -23,8 +23,8 @@ Package.onUse(function(api) {
     'Blobs', 'Forms', 'Window'
   ], 'client');
   api.addFiles([
-    'Arrays.coffee', 'Booleans.coffee', 'Collections.coffee', 'Dates.coffee', 'Objects.coffee',
-    'Setter.coffee', 'Strings.coffee', 'Types.coffee'
+    'Arrays.coffee', 'Booleans.coffee', 'Collections.coffee', 'Dates.coffee', 'Maths.coffee',
+    'Objects.coffee', 'Setter.coffee', 'Strings.coffee', 'Types.coffee'
   ], ['client', 'server']);
   api.addFiles([
     'Blobs.coffee', 'Forms.coffee', 'Window.coffee'

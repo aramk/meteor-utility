@@ -7,7 +7,7 @@ Types =
     if !object then false else this.getTypeOf(object) == type
 
   isObject: (object) ->
-    typeof object == 'object'
+    object && typeof object == 'object'
 
   isObjectLiteral: (object) ->
     this.isType(object, 'Object')
