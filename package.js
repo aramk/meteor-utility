@@ -1,7 +1,7 @@
 Package.describe({
   name: 'aramk:utility',
   summary: 'A collection of utility modules',
-  version: '0.3.0',
+  version: '0.3.1',
   git: 'https://github.com/aramk/meteor-utility.git'
 });
 
@@ -11,7 +11,7 @@ Package.onUse(function(api) {
   api.use(['deps', 'templating', 'jquery'], 'client');
   // NOTE: I am using a custom fork at:
   // https://github.com/aramk/meteor-collection-hooks/tree/feature/exceptions
-  api.use(['aldeed:autoform@3.2.0', 'mrt:moment@2.8.1', 'matb33:collection-hooks@0.7.6'],
+  api.use(['aldeed:autoform@4.0.7', 'mrt:moment@2.8.1', 'matb33:collection-hooks@0.7.6'],
     'client', {weak: true});
   api.export([
     'Arrays', 'Booleans', 'Collections', 'Dates', 'Maths', 'Objects', 'Setter', 'Strings', 'Types'
@@ -20,16 +20,17 @@ Package.onUse(function(api) {
     'Buffers'
   ], 'server');
   api.export([
-    'Blobs', 'Forms', 'Window'
+    'Blobs', 'Forms', 'Templates', 'Window'
   ], 'client');
   api.addFiles([
-    'Arrays.coffee', 'Booleans.coffee', 'Collections.coffee', 'Dates.coffee', 'Maths.coffee',
-    'Objects.coffee', 'Setter.coffee', 'Strings.coffee', 'Types.coffee'
+    'src/Arrays.coffee', 'src/Booleans.coffee', 'src/Collections.coffee', 'src/Dates.coffee',
+    'src/Maths.coffee',  'src/Objects.coffee', 'src/Setter.coffee', 'src/Strings.coffee',
+    'src/Types.coffee'
   ], ['client', 'server']);
   api.addFiles([
-    'Blobs.coffee', 'Forms.coffee', 'Window.coffee'
+    'src/Blobs.coffee', 'src/Forms.coffee', 'src/Templates.coffee', 'src/Window.coffee'
   ], 'client');
   api.addFiles([
-    'Buffers.coffee'
+    'src/Buffers.coffee'
   ], 'server');
 });

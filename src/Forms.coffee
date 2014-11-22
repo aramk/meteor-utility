@@ -72,7 +72,6 @@ Forms =
         console.log('doc', @doc, 'type', type)
         type
       submitText: -> if @doc then 'Save' else 'Create'
-      settings: -> Forms.preventText(@settings) if @settings?
 
     Form.events
       'click button.cancel': (e, template) ->

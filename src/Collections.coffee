@@ -58,8 +58,7 @@ Collections =
 
 # @param obj
 # @returns {Boolean} Whether the given object is a collection cursor.
-  isCursor: (obj) ->
-    obj.fetch != undefined
+  isCursor: (obj) -> obj && Types.isFunction(obj.fetch)
 
 # @param {Meteor.Collection|Cursor|Array} arg
 # @returns {Array} The items in the collection, or the cursor, or the original array passed.
@@ -148,10 +147,18 @@ Collections =
 # an exception, which causes validation to fail and prevents insert() or update() on the collection
 # from completing.
   addValidation: (collection, validate) ->
-    collection.before.insert (userId, doc) ->
-      inValid = validate(doc)
-      throw new Error(inValid) if inValid
+    collection.before.insert (userId, doc) =>
+      @_handleValidationResult(validate(doc))
     collection.before.update (userId, doc, fieldNames, modifier) =>
       doc = @simulateModifierUpdate(doc, modifier)
-      inValid = validate(doc)
-      throw new Error(inValid) if inValid
+      @_handleValidationResult(validate(doc))
+
+  _handleValidationResult: (result) ->
+    # TODO(aramk) The deferred won't run in time since hooks are not asynchronous yet, so it won't
+    # prevent the collection methods from being called.
+    # https://github.com/matb33/meteor-collection-hooks/issues/71
+    handle = (invalid) -> throw new Error(invalid) if invalid
+    if result && result.then
+      result.then(handle, handle)
+    else
+      handle(result)
