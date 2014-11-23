@@ -1,18 +1,23 @@
 Templates =
 
-  getNamed: (name) ->
-    template = Template.instance()
-    unless template
+  # @param {String} name - The template name, excluding the "Template." prefix.
+  # @param {Blaze.Template} [templateInstance] - The starting template to use for traversing up the
+  # template hierarchy. By default this will be the current template instance in the scope.
+  # @returns {Blaze.TemplateInstance} The template instance in the current hierarchy with the given
+  # name.
+  getNamedInstance: (name, templateInstance) ->
+    templateInstance = templateInstance ? Template.instance()
+    unless templateInstance
       throw new Error('No current template found.')
-    view = template.view
+    view = templateInstance.view
     unless view
       throw new Error('No view for current template found.')
     viewQueue = [view]
     while viewQueue.length > 0
       view = viewQueue.pop()
-      template = view._templateInstance
+      templateInstance = view.templateInstance?()
       break if view.name == 'Template.' + name
       viewQueue.push(view.parentView)
-    template
+    templateInstance
 
-  getDom: (component) -> component._domrange.parentElement
+  getDom: (view) -> view._domrange.parentElement

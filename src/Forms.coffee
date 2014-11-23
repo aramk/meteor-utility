@@ -17,6 +17,10 @@ Forms =
         else
           callback()
 
+    getAutoFormTemplateInstance = -> Blaze.getView($('form#' + name)[0]).templateInstance()
+
+    getTemplateInstance = -> Templates.getNamedInstance(name, getAutoFormTemplateInstance())
+
     AutoForm.addHooks name,
       # Settings should be passed to the autoForm helper to ensure they are available in these
       # callbacks.
@@ -25,21 +29,17 @@ Forms =
         template = @template
         console.debug 'onSubmit', args, @
         result = formArgs.onSubmit?.apply(@, args)
-        callback = -> template.data?.settings?.onSubmit?.apply(@, args)
+        formTemplate = getTemplateInstance()
+        callback = -> formTemplate.data?.settings?.onSubmit?.apply(@, args)
         deferCallback(result, callback)
 
       onSuccess: (operation, result, template) ->
         args = arguments
+        formTemplate = getTemplateInstance()
         console.debug 'onSuccess', args, @
         AutoForm.resetForm(name)
-        # TODO(aramk) For some reason, template.data.doc is sometimes modified (_id and other fields
-        # are missing), so we store the doc elsewhere and provide it here.
-        data = template.data
-        _doc = data.settings?._doc
-        if _doc
-          data.doc = _doc
         result = formArgs.onSuccess?.apply(@, args)
-        callback = -> template.data?.settings?.onSuccess?.apply(@, args)
+        callback = -> formTemplate.data?.settings?.onSuccess?.apply(@, args)
         deferCallback(result, callback)
 
       onError: (operation, error, template) ->
@@ -67,10 +67,7 @@ Forms =
         collectionName = Collections.getTitle(formArgs.collection)
         (if @doc then 'Edit' else 'Create') + ' ' + Strings.singular(collectionName)
       formType: ->
-        console.log('doc', @doc)
-        type = if @doc then 'update' else 'insert'
-        console.log('doc', @doc, 'type', type)
-        type
+        if @doc then 'update' else 'insert'
       submitText: -> if @doc then 'Save' else 'Create'
 
     Form.events
@@ -78,7 +75,8 @@ Forms =
         e.preventDefault()
         console.debug 'onCancel', arguments, @
         formArgs.onCancel?(template)
-        template.data?.settings?.onCancel?()
+        formTemplate = getTemplateInstance()
+        formTemplate.data?.settings?.onCancel?()
 
     Form.created = ->
       formArgs.onCreate?.apply(@, arguments)
