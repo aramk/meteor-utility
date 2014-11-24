@@ -104,12 +104,7 @@ Forms =
         if desc?
           popupInputs.push($input.data('desc', desc))
         # Add units into labels
-        $label = @$('label[for="' + key + '"]')
-        if $label.length == 0
-          $parent = $input.parent()
-          if $parent.is('.dropdown')
-            $label = $parent.prev('label')
-
+        $label = Forms.getInputLabel($input)
         units = field.units
         $labelContent = $('<div class="value">' + $label.html() + '</div>')
         $label.empty()
@@ -151,6 +146,14 @@ Forms =
   addRequiredLabel: ($label) ->
     $requiredContent = $('<div class="required"></div>')
     $label.append($requiredContent)
+
+  getInputLabel: ($input) ->
+    $label = $input.prev('label')
+    if $label.length == 0
+      $parent = $input.parent()
+      if $parent.is('.dropdown')
+        $label = $parent.prev('label')
+    $label
 
 # We may pass the temporary collection as an attribute to autoform templates, so we need to
 # define this to avoid errors since it is passed into the actual <form> HTML object.
