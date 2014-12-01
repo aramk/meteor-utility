@@ -20,4 +20,26 @@ Templates =
       viewQueue.push(view.parentView)
     templateInstance
 
-  getDom: (view) -> view._domrange.parentElement
+  getElement: (view) -> view._domrange.parentElement
+
+  bindVarToElement: ($em, reactiveVar, options) ->
+    $em = $($em)
+    if $em.length == 0
+      throw new Error('Invalid element')
+    unless reactiveVar instanceof ReactiveVar
+      throw new Error('Invalid reactive variable')
+    options = _.extend({
+      template: Template.instance()
+      marshall: (value) -> value
+      unmarshall: (value) -> return value
+      getValue: -> $(this).val()
+      setValue: (value) -> $(this).val(value)
+      changeEvents: 'change keyup'
+    }, options)
+    options.template.autorun ->
+      value = options.marshall(reactiveVar.get())
+      options.setValue.call($em, value)
+    $em.on(options.changeEvents, _.debounce((->
+      value = options.getValue.call($em)
+      reactiveVar.set(options.unmarshall(value))
+    ), 500))

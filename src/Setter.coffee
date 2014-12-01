@@ -2,6 +2,9 @@ deep = (value, other) -> lodash.merge(value, other, deep)
 
 Setter =
 
+  defaultValue: (value, defaultValue) ->
+    if value == undefined then defaultValue else value
+
   merge: (args...) ->
     dest = args[0]
     args.shift()

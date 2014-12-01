@@ -147,6 +147,8 @@ Forms =
     $requiredContent = $('<div class="required"></div>')
     $label.append($requiredContent)
 
+  getRequiredLabels: ($em) -> $('.required', $em)
+
   getInputLabel: ($input) ->
     $label = $input.prev('label')
     if $label.length == 0
