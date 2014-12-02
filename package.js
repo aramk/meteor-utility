@@ -1,7 +1,7 @@
 Package.describe({
   name: 'aramk:utility',
   summary: 'A collection of utility modules',
-  version: '0.4.1',
+  version: '0.4.2',
   git: 'https://github.com/aramk/meteor-utility.git'
 });
 
@@ -11,7 +11,7 @@ Package.onUse(function(api) {
   api.use(['deps', 'templating', 'jquery'], 'client');
   // NOTE: I am using a custom fork at:
   // https://github.com/aramk/meteor-collection-hooks/tree/feature/exceptions
-  api.use(['aldeed:autoform@3.2.0', 'mrt:moment@2.8.1', 'matb33:collection-hooks@0.7.6'],
+  api.use(['aldeed:autoform@4.0.7', 'mrt:moment@2.8.1', 'matb33:collection-hooks@0.7.6'],
     'client', {weak: true});
   api.export([
     'Arrays', 'Booleans', 'Collections', 'Dates', 'Maths', 'Objects', 'Setter', 'Strings', 'Types'
