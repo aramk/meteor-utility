@@ -109,13 +109,7 @@ Collections =
       if handler
         observeArgs[methodName] = createHandler(handler)
     handle = @getCursor(collection).observe(observeArgs)
-    # If on the client, wait for the collection subscription to finish to avoid triggering
-    # the create handler as new items are added. Don't subscribe to unmanaged local collections
-    # which are unnamed.
-    if Meteor.isClient && !@isTemporary(collection)
-      Meteor.subscribe @getName(collection), -> observing = true
-    else
-      observing = true
+    observing = true
     handle
 
 # @param {Array.<Meteor.Collection>} collections
