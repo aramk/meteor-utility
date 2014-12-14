@@ -7,7 +7,8 @@ Package.describe({
 
 Package.onUse(function(api) {
   api.versionsFrom('METEOR@0.9.0');
-  api.use(['coffeescript', 'underscore', 'stevezhu:lodash@0.2.0'], ['client', 'server']);
+  api.use(['coffeescript', 'underscore', 'stevezhu:lodash@0.2.0', 'aramk:q@1.0.1_1'],
+    ['client', 'server']);
   api.use(['deps', 'templating', 'jquery'], 'client');
   // NOTE: I am using a custom fork at:
   // https://github.com/aramk/meteor-collection-hooks/tree/feature/exceptions

@@ -18,3 +18,7 @@ Setter =
   # Deeply merges defaults, relying on _.merge(a,b) returning a if it isn't an object to prevent
   # source property values overriding their defined destinations.
   defaults: lodash.partialRight(lodash.merge, deep)
+
+  # @param {*} value
+  # @returns Whether the given value is not an non-empty string, null, undefined or NaN.
+  isDefined: (value) -> value != '' && value? && !isNaN(value)
