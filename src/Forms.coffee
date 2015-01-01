@@ -17,10 +17,6 @@ Forms =
         else
           callback()
 
-    getAutoFormTemplateInstance = -> Blaze.getView($('form#' + name)[0]).templateInstance()
-
-    getTemplateInstance = -> Templates.getNamedInstance(name, getAutoFormTemplateInstance())
-
     AutoForm.addHooks name,
       # Settings should be passed to the autoForm helper to ensure they are available in these
       # callbacks.
@@ -29,13 +25,13 @@ Forms =
         template = @template
         console.debug 'onSubmit', args, @
         result = formArgs.onSubmit?.apply(@, args)
-        formTemplate = getTemplateInstance()
+        formTemplate = getTemplate(template)
         callback = -> formTemplate.data?.settings?.onSubmit?.apply(@, args)
         deferCallback(result, callback)
 
       onSuccess: (operation, result, template) ->
         args = arguments
-        formTemplate = getTemplateInstance()
+        formTemplate = getTemplate(template)
         console.debug 'onSuccess', args, @
         AutoForm.resetForm(name)
         result = formArgs.onSuccess?.apply(@, args)
@@ -75,7 +71,7 @@ Forms =
         e.preventDefault()
         console.debug 'onCancel', arguments, @
         formArgs.onCancel?(template)
-        formTemplate = getTemplateInstance()
+        formTemplate = getTemplate(template)
         formTemplate.data?.settings?.onCancel?()
 
     Form.created = ->
@@ -140,6 +136,8 @@ Forms =
       template = @
       template.isDestroyed = true
       formArgs.onDestroy?.apply(@, arguments)
+
+    getTemplate = (template) -> Templates.getNamedInstance(name, template)
 
     return Form
 

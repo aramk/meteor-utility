@@ -203,3 +203,10 @@ Collections =
       result.then(handle, handle)
     else
       handle(result)
+
+  intersection: (a, b) ->
+    result = @createTemporary()
+    a.find().forEach (item) ->
+      if b.findOne(item._id)
+        result.insert(item)
+    result
