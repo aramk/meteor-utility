@@ -89,6 +89,13 @@ Collections =
           if err2
             throw new Error('Failed to remove from source collection when moving')
 
+  duplicateDoc: (docOrId, collection) ->
+    df = Q.defer()
+    doc = if Types.isObject(docOrId) then docOrId else collection.findOne(docOrId)
+    delete doc._id
+    collection.insert doc, (err, result) -> if err then df.reject(err) else df.resolve(result)
+    df.promise
+
   removeAllDocs: (collection) ->
     _.each collection.find().fetch(), (order) ->
       collection.remove(order._id)
@@ -119,7 +126,7 @@ Collections =
 
   # Copies docs from one collection to another and tracks changes in the source collection to apply
   # over time.
-  # @param {Meteor.Collection} src
+  # @param {Meteor.Collection|Cursor} src
   # @param {Meteor.Collection} [dest] - If none is provided, a temporary collection is used.
   # @param {Object} [args]
   # @param {Boolean} [args.track=true] - Whether to observe changes in the source and apply them to
@@ -130,7 +137,8 @@ Collections =
     args = _.extend({track: true}, args)
     dest ?= @createTemporary()
     insertPromises = []
-    src.find().forEach (doc) ->
+
+    @getCursor(src).forEach (doc) ->
       return if dest.findOne(doc._id)
       df = Q.defer()
       insertPromises.push(df.promise)

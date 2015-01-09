@@ -109,7 +109,7 @@ Forms =
           formattedUnits = Strings.format.scripts(units)
           $units = $('<div class="units">' + formattedUnits + '</div>')
           $label.append($units)
-        required = field.optional == false
+        required = field.optional != true
         if required
           Forms.addRequiredLabel($label)
           hasRequiredField = true
@@ -119,20 +119,27 @@ Forms =
 
       addPopups = ->
         $(popupInputs).each ->
-          $input = $(@)
-          $input.data('desc')
-          $input.popup('setting', delay: 500, content: $input.data('desc'))
+          $popupInput = $(@)
+          # Manual control over popup to prevent losing focus when closing it in Semantic-UI 1.0.
+          $popupInput.popup({delay: 500, on: 'manual', content: $popupInput.data('desc')})
+          $popupInput.on 'mouseenter', ->
+            $popupInput.popup('show')
+          $popupInput.on 'mouseleave', ->
+            isFocused = $popupInput.is(':focus')
+            $popupInput.popup('hide')
+            $popupInput.focus() if isFocused
 
-      removePopups = ->
+      @removePopups = ->
         $(popupInputs).popup('destroy')
 
       @autorun (c) ->
         helpMode = Session.get 'helpMode'
-        if helpMode then addPopups() else removePopups()
+        if helpMode then addPopups() else @removePopups()
       formArgs.onRender?.apply(@, arguments)
 
     Form.destroyed = ->
       console.debug 'Destroyed form', @, arguments
+      @removePopups()
       template = @
       template.isDestroyed = true
       formArgs.onDestroy?.apply(@, arguments)
