@@ -121,10 +121,19 @@ Forms =
         $(popupInputs).each ->
           $popupInput = $(@)
           # Manual control over popup to prevent losing focus when closing it in Semantic-UI 1.0.
-          $popupInput.popup({delay: 500, on: 'manual', content: $popupInput.data('desc')})
+          $popupInput.popup(
+            {delay: 200, duration: 100, on: 'manual', content: $popupInput.data('desc')})
+          isHovering = false
+          handle = null
           $popupInput.on 'mouseenter', ->
-            $popupInput.popup('show')
+            isHovering = true
+            if handle
+              clearTimeout(handle)
+            handle = setTimeout(
+              -> $popupInput.popup('show') if isHovering
+              500)
           $popupInput.on 'mouseleave', ->
+            isHovering = false
             isFocused = $popupInput.is(':focus')
             $popupInput.popup('hide')
             $popupInput.focus() if isFocused
