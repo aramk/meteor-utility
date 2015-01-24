@@ -28,6 +28,7 @@ Forms =
         formTemplate = getTemplate(template)
         callback = -> formTemplate.data?.settings?.onSubmit?.apply(@, args)
         deferCallback(result, callback)
+        return result if result?
 
       onSuccess: (operation, result, template) ->
         args = arguments
@@ -55,6 +56,7 @@ Forms =
 
     Form.helpers
       collection: -> Collections.get(formArgs.collection)
+      schema: -> formArgs.schema
       formName: -> name
     # Without this a separate copy is passed across, which doesn't allow sharing data between
     # create method and form hooks.
@@ -63,6 +65,8 @@ Forms =
         collectionName = Collections.getTitle(formArgs.collection)
         (if @doc then 'Edit' else 'Create') + ' ' + Strings.singular(collectionName)
       formType: ->
+        type = formArgs.type
+        return type if type
         if @doc then 'update' else 'insert'
       submitText: -> if @doc then 'Save' else 'Create'
 
@@ -85,10 +89,8 @@ Forms =
       if $buttons.length > 0 && $crudForm.length > 0
         $crudForm.append($buttons)
       @$('[type="submit"]', $buttons).click => @$('form', $crudForm).submit()
-      AutoForm.resetForm(name)
 
-      collection = Collections.get(formArgs.collection)
-      @schemaInputs = Forms.getSchemaInputs(@, collection)
+      @schemaInputs = Forms.getSchemaInputs(@, formArgs.schema ? formArgs.collection)
 
       popupInputs = []
       hasRequiredField = false
@@ -138,22 +140,23 @@ Forms =
             $popupInput.popup('hide')
             $popupInput.focus() if isFocused
 
-      @removePopups = ->
+      removePopups = ->
         $(popupInputs).popup('destroy')
 
       @autorun (c) ->
         helpMode = Session.get 'helpMode'
-        if helpMode then addPopups() else @removePopups()
+        if helpMode then addPopups() else removePopups()
       formArgs.onRender?.apply(@, arguments)
 
     Form.destroyed = ->
       console.debug 'Destroyed form', @, arguments
-      @removePopups()
       template = @
       template.isDestroyed = true
       formArgs.onDestroy?.apply(@, arguments)
 
-    getTemplate = (template) -> Templates.getNamedInstance(name, template)
+
+
+    getTemplate = Form.getTemplate = (template) -> Templates.getNamedInstance(name, template)
 
     return Form
 
@@ -171,6 +174,44 @@ Forms =
         $label = $parent.prev('label')
     $label
 
+  setInputValue: ($input, value) ->
+    if @isSelectInput($input)
+      @setSelectValue($input, value)
+    else if $input.is('[type="checkbox"]')
+      $input.prop('checked', value)
+    else
+      $input.val(value)
+
+  getInputValue: ($input) ->
+    if @isSelectInput($input)
+      @getSelectValue($input)
+    else
+      $input.val()
+
+  isSelectInput: ($input) -> $input.is('select') || @isDropdown($input)
+
+  getSelectOption: ($input, value) ->
+    if @isDropdown($input)
+      Template.dropdown.getItem($input, value)
+    else if @isSelectInput($input)
+      $('option[value="' + value + '"]', $input)
+    else
+      throw new Error('No select field found.')
+
+  setSelectValue: ($input, value) ->
+    if @isDropdown($input)
+      Template.dropdown.setValue($input, value)
+    else
+      $input.val(value)
+  
+  getSelectValue: ($input) ->
+    if @isDropdown($input)
+      Template.dropdown.getValue($input)
+    else
+      $input.val()
+
+  isDropdown: ($input) -> Template.dropdown.isDropdown($input)
+
 # We may pass the temporary collection as an attribute to autoform templates, so we need to
 # define this to avoid errors since it is passed into the actual <form> HTML object.
   preventText: (obj) ->
@@ -180,9 +221,9 @@ Forms =
   findFieldInput: (template, name) ->
     template.find('[name="' + name + '"]')
 
-  getSchemaInputs: (template, collection) ->
+  getSchemaInputs: (template, arg) ->
     $schemaInputs = template.$('[data-schema-key]')
-    schema = collection.simpleSchema()
+    schema = Collections.getSchema(arg)
     schemaInputs = {}
     if schema?
       $schemaInputs.each ->

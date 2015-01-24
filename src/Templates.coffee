@@ -15,10 +15,17 @@ Templates =
     viewQueue = [view]
     while viewQueue.length > 0
       view = viewQueue.pop()
+      return unless view
       templateInstance = view.templateInstance?()
       break if view.name == 'Template.' + name
       viewQueue.push(view.parentView)
     templateInstance
+
+  getInstanceFromElement: (em) ->
+    $em = $(em)
+    view = Blaze.getView($em[0])
+    return unless view
+    view.templateInstance()
 
   getElement: (view) -> view._domrange.parentElement
 

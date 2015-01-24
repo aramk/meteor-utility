@@ -37,6 +37,17 @@ Collections =
       collection = @get(arg)
       collection.find()
 
+  # @param {String|Meteor.Collection|Cursor|SimpleSchema} arg
+  # @returns {SimpleSchema}
+  getSchema: (arg) ->
+    collection = @get(arg)
+    if @isCollection(collection)
+      collection.simpleSchema()
+    else if arg instanceof SimpleSchema
+      arg
+    else
+      null
+
   # @param {String|Meteor.Collection|Cursor} arg
   # @returns {Meteor.Collection|Cursor} Either a Meteor collection, a cursor, or null if none is
   # found.
@@ -73,9 +84,15 @@ Collections =
       return arg.fetch()
     return []
 
-  createTemporary: -> new Meteor.Collection(null)
+  createTemporary: (docs) ->
+    collection = new Meteor.Collection(null)
+    @insertAll(docs, collection)
+    collection
 
   isTemporary: (collection) -> !@getName(collection)
+
+  insertAll: (docs, collection) ->
+    _.each docs, (doc) -> collection.insert(doc)
 
   moveDoc: (id, sourceCollection, destCollection) ->
     order = sourceCollection.findOne(id)
@@ -130,36 +147,54 @@ Collections =
   # @param {Meteor.Collection} [dest] - If none is provided, a temporary collection is used.
   # @param {Object} [args]
   # @param {Boolean} [args.track=true] - Whether to observe changes in the source and apply them to
-  # the destination over time.
+  #      the destination over time.
+  # @param {Boolean} [args.exclusive=false] - Whether to retain previous observations for copying.
+  #      If true, the existing observation is stopped before the new one starts.
+  # @param {Function} [args.beforeInsert] - A function which is passed each document from the source
+  #      before it is inserted into the destination. If false is returned by this function, the
+  #      insert is cancelled.
   # @returns {Promise} A promise containing the destination collection once all docs have been
   # copied.
   copy: (src, dest, args) ->
-    args = _.extend({track: true}, args)
+    args = _.extend({
+      track: true,
+      exclusive: false
+    }, args)
     dest ?= @createTemporary()
     insertPromises = []
 
+    beforeInsert = args.beforeInsert
+    insert = (srcDoc) ->
+      df = Q.defer()
+      if beforeInsert
+        result = beforeInsert(srcDoc)
+        return if result == false
+      dest.insert srcDoc, (err, result) -> if err then df.reject(err) else df.resolve(result)
+      df.promise
+
     @getCursor(src).forEach (doc) ->
       return if dest.findOne(doc._id)
-      df = Q.defer()
-      insertPromises.push(df.promise)
-      dest.insert doc, (err, result) -> if err then df.reject(err) else df.resolve(result)
+      insertPromises.push(insert(doc))
     if args.track
       # Collection2 may not allow inserting a doc into a collection with a predefined _id, so we
       # store a map of src to dest IDs. If a copied doc is removed in the destination, this will
       # still reference the source doc ID to this doc ID.
       idMap = {}
-      insert = (srcDoc) ->
-        dest.insert srcDoc, (err, insertId) ->
-          return if err
+      insertWithMap = (srcDoc) ->
+        insert(srcDoc).then (insertId) ->
           idMap[srcDoc._id] = insertId
+      if args.exclusive
+        # Stop any existing copy.
+        trackHandle = dest.trackHandle
+        trackHandle.stop() if trackHandle
       dest.trackHandle = @observe src,
-        added: insert
+        added: insertWithMap
         changed: (newDoc, oldDoc) ->
           id = idMap[newDoc._id]
           # If the document doesn't exist in the destination, don't track changes from the source.
           if dest.findOne(id)
             dest.remove(id)
-            insert(newDoc)
+            insertWithMap(newDoc)
         removed: (oldDoc) ->
           id = oldDoc._id
           dest.remove id, (err, result) ->
@@ -176,6 +211,21 @@ Collections =
       name = @getName(collection)
       collectionMap[name] = collection
     collectionMap
+
+  # @param {Object.<String, String>} map - A map of IDs to names of the items.
+  # @returns A temporary collection with items created from the given map.
+  fromNameMap: (map, args) ->
+    args = _.extend({
+    }, args)
+    collection = Collections.createTemporary()
+    callback = args.callback
+    _.each map, (item, id) ->
+      if callback
+        name = callback(item, id)
+      else
+        name = item
+      collection.insert(_id: id, name: name)
+    collection
 
   # @returns {String} Generates a MongoDB ObjectID hex string.
   generateId: -> new Mongo.ObjectID().toHexString()
@@ -196,9 +246,11 @@ Collections =
   # an exception, which causes validation to fail and prevents insert() or update() on the collection
   # from completing.
   addValidation: (collection, validate) ->
-    collection.before.insert (userId, doc) =>
+    collection.before.insert (userId, doc, options) =>
+      return if options?.validate == false
       @_handleValidationResult(validate(doc))
-    collection.before.update (userId, doc, fieldNames, modifier) =>
+    collection.before.update (userId, doc, fieldNames, modifier, options) =>
+      return if options?.validate == false
       doc = @simulateModifierUpdate(doc, modifier)
       @_handleValidationResult(validate(doc))
 

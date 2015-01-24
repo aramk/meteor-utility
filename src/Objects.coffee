@@ -20,3 +20,22 @@ Objects =
       if keys?
         @addRecursiveProperty(obj, keys, value)
         delete obj[origKey]
+
+
+  # Visits all object leaves in the given object.
+  traverseLeaves: (obj, callback) ->
+    branches = []
+    _.each obj, (value, key) ->
+      if Types.isObject(value)
+        branches.push(key)
+    if branches.length == 0
+      callback(obj)
+    else
+      _.each branches, (branch) =>
+        @traverseLeaves(obj[branch])
+
+  traverseValues: (obj, callback) ->
+    _.each obj, (value, key) =>
+      callback(value, key)
+      if Types.isObject(value)
+        @traverseValues(value, callback)
