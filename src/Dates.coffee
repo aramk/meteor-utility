@@ -6,6 +6,8 @@ Dates =
 
   toTime: (date) -> moment(date).format('h:mm:ss A')
 
+  toIdentifier: (date) -> moment(date).format().replace(/[^\w-]+/g, '-')
+
   # @returns {String} The current timezone offset in ISO-8601 format (e.g. +01:00).
   getCurrentOffset: -> moment().format().match(/[+-]\d+:\d+$/)[0]
 
