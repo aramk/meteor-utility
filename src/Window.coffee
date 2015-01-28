@@ -35,3 +35,5 @@ Window =
   getVarBool: (name) ->
     variable = @GET(name)
     if variable == undefined then undefined else !!parseInt(variable)
+
+  downloadFile: (url) -> location.href = url

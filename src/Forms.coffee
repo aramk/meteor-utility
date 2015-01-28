@@ -188,6 +188,8 @@ Forms =
     else
       $input.val()
 
+  getFieldElement: (name, formElement) -> $('[data-schema-key="' + name + '"]', formElement)
+
   isSelectInput: ($input) -> $input.is('select') || @isDropdown($input)
 
   getSelectOption: ($input, value) ->
