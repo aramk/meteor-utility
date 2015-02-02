@@ -118,7 +118,8 @@ Collections =
       collection.remove(order._id)
 
   # @param {Meteor.Collection|Cursor|String} collection
-  # @param {Object} args
+  # @param {Object|Function} args - If given as a function, it takes precendence as the callback
+  #      for all event callbacks otherwise allowed.
   # @param {Function} [args.added]
   # @param {Function} [args.changed]
   # @param {Function} [args.removed]
@@ -126,6 +127,8 @@ Collections =
   # existing docs.
   observe: (collection, args) ->
     observing = false
+    if Types.isFunction(args)
+      args = {added: args, changed: args, removed: args}
     args = _.extend({triggerExisting: false}, args)
     createHandler = (handler) ->
       -> handler.apply(@, arguments) if observing
