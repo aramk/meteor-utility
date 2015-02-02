@@ -171,18 +171,21 @@ Collections =
         return if result == false
       dest.insert srcDoc, (err, result) -> if err then df.reject(err) else df.resolve(result)
       df.promise
+    # Collection2 may not allow inserting a doc into a collection with a predefined _id, so we
+    # store a map of src to dest IDs. If a copied doc is removed in the destination, this will
+    # still reference the source doc ID to this doc ID.
+    idMap = {}
+    # Default to the same ID if no mapping is found.
+    getDestId = (id) -> idMap[id] ? id
+    insertWithMap = (srcDoc) ->
+      id = getDestId(srcDoc._id)
+      return if dest.findOne(id)
+      insert(srcDoc).then (insertId) ->
+        idMap[srcDoc._id] = insertId
 
     @getCursor(src).forEach (doc) ->
-      return if dest.findOne(doc._id)
-      insertPromises.push(insert(doc))
+      insertPromises.push(insertWithMap(doc))
     if args.track
-      # Collection2 may not allow inserting a doc into a collection with a predefined _id, so we
-      # store a map of src to dest IDs. If a copied doc is removed in the destination, this will
-      # still reference the source doc ID to this doc ID.
-      idMap = {}
-      insertWithMap = (srcDoc) ->
-        insert(srcDoc).then (insertId) ->
-          idMap[srcDoc._id] = insertId
       if args.exclusive
         # Stop any existing copy.
         trackHandle = dest.trackHandle
@@ -190,13 +193,14 @@ Collections =
       dest.trackHandle = @observe src,
         added: insertWithMap
         changed: (newDoc, oldDoc) ->
-          id = idMap[newDoc._id]
           # If the document doesn't exist in the destination, don't track changes from the source.
+          # Default to the same ID if no mapping is found.
+          id = getDestId(newDoc._id)
           if dest.findOne(id)
             dest.remove(id)
             insertWithMap(newDoc)
         removed: (oldDoc) ->
-          id = oldDoc._id
+          id = getDestId(oldDoc._id)
           dest.remove id, (err, result) ->
             return unless result == 1
             delete idMap[id]
