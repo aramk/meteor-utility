@@ -13,3 +13,19 @@ Promises =
     args.push(wrappedCallback)
     Meteor.call.apply(Meteor, args)
     df.promise
+
+  runSync: (callback) ->
+    response = Async.runSync (done) ->
+      try
+        result = callback(done)
+        if result?.then?
+          result.then(
+            (result) -> done(null, result)
+            (err) -> done(err, null)
+          )
+      catch err
+        done(err, null)
+    if response.error
+      throw response.error
+    else
+      response.result
