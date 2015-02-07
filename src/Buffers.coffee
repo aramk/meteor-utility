@@ -1,13 +1,10 @@
 Buffers =
 
   fromStream: (stream) ->
-    response = Async.runSync (done) ->
+    Promises.runSync (done) ->
       buffers = []
-      stream.on 'data', (buffer) ->
-        buffers.push(buffer)
-      stream.on 'end', ->
-        done(null, Buffer.concat(buffers))
-    response.result
+      stream.on 'data', (buffer) -> buffers.push(buffer)
+      stream.on 'end', -> done(null, Buffer.concat(buffers))
 
   fromArrayBuffer: (arrayBuffer) ->
     buffer = new Buffer(arrayBuffer.byteLength)
