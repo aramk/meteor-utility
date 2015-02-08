@@ -2,6 +2,10 @@ global = @
 
 Collections =
 
+####################################################################################################
+# COLLECTIONS
+####################################################################################################
+
   allow: -> true
   allowAll: -> insert: @allow, update: @allow, remove: @allow
 
@@ -50,7 +54,7 @@ Collections =
 
   # @param {String|Meteor.Collection|Cursor} arg
   # @returns {Meteor.Collection|Cursor} Either a Meteor collection, a cursor, or null if none is
-  # found.
+  #     found.
   resolve: (arg) ->
     if Types.isString(arg)
       # Collection name.
@@ -84,6 +88,31 @@ Collections =
       return arg.fetch()
     return []
 
+  # @param {Array.<Meteor.Collection>} collections
+  # @returns {Object.<String, Meteor.Collection>} A map of collection name to object for the given
+  #      collections.
+  getMap: (collections) ->
+    collectionMap = {}
+    _.each collections, (collection) =>
+      name = @getName(collection)
+      collectionMap[name] = collection
+    collectionMap
+
+  # @param {Object.<String, String>} map - A map of IDs to names of the items.
+  # @returns A temporary collection with items created from the given map.
+  fromNameMap: (map, args) ->
+    args = _.extend({
+    }, args)
+    collection = Collections.createTemporary()
+    callback = args.callback
+    _.each map, (item, id) ->
+      if callback
+        name = callback(item, id)
+      else
+        name = item
+      collection.insert(_id: id, name: name)
+    collection
+
   createTemporary: (docs) ->
     collection = new Meteor.Collection(null)
     @insertAll(docs, collection)
@@ -91,31 +120,18 @@ Collections =
 
   isTemporary: (collection) -> !@getName(collection)
 
+  # @returns {String} Generates a MongoDB ObjectID hex string.
+  generateId: -> new Mongo.ObjectID().toHexString()
+
   insertAll: (docs, collection) ->
     _.each docs, (doc) -> collection.insert(doc)
 
-  moveDoc: (id, sourceCollection, destCollection) ->
-    order = sourceCollection.findOne(id)
-    unless order
-      throw new Error('Could not find doc with id ' + id + ' in collection ' + sourceCollection)
-    destCollection.insert order, (err, result) ->
-      if err
-        throw new Error('Failed to insert into destination collection when moving')
-      else
-        sourceCollection.remove id, (err2, result2) ->
-          if err2
-            throw new Error('Failed to remove from source collection when moving')
-
-  duplicateDoc: (docOrId, collection) ->
-    df = Q.defer()
-    doc = if Types.isObject(docOrId) then docOrId else collection.findOne(docOrId)
-    delete doc._id
-    collection.insert doc, (err, result) -> if err then df.reject(err) else df.resolve(result)
-    df.promise
-
-  removeAllDocs: (collection) ->
-    _.each collection.find().fetch(), (order) ->
-      collection.remove(order._id)
+  intersection: (a, b) ->
+    result = @createTemporary()
+    a.find().forEach (item) ->
+      if b.findOne(item._id)
+        result.insert(item)
+    result
 
   # @param {Meteor.Collection|Cursor|String} collection
   # @param {Object|Function} args - If given as a function, it takes precendence as the callback
@@ -209,33 +225,32 @@ Collections =
             delete idMap[id]
     Q.all(insertPromises).then -> dest
 
-  # @param {Array.<Meteor.Collection>} collections
-  # @returns {Object.<String, Meteor.Collection>} A map of collection name to object for the given
-  # collections.
-  getMap: (collections) ->
-    collectionMap = {}
-    _.each collections, (collection) =>
-      name = @getName(collection)
-      collectionMap[name] = collection
-    collectionMap
+####################################################################################################
+# DOCS
+####################################################################################################
 
-  # @param {Object.<String, String>} map - A map of IDs to names of the items.
-  # @returns A temporary collection with items created from the given map.
-  fromNameMap: (map, args) ->
-    args = _.extend({
-    }, args)
-    collection = Collections.createTemporary()
-    callback = args.callback
-    _.each map, (item, id) ->
-      if callback
-        name = callback(item, id)
+  moveDoc: (id, sourceCollection, destCollection) ->
+    order = sourceCollection.findOne(id)
+    unless order
+      throw new Error('Could not find doc with id ' + id + ' in collection ' + sourceCollection)
+    destCollection.insert order, (err, result) ->
+      if err
+        throw new Error('Failed to insert into destination collection when moving')
       else
-        name = item
-      collection.insert(_id: id, name: name)
-    collection
+        sourceCollection.remove id, (err2, result2) ->
+          if err2
+            throw new Error('Failed to remove from source collection when moving')
 
-  # @returns {String} Generates a MongoDB ObjectID hex string.
-  generateId: -> new Mongo.ObjectID().toHexString()
+  duplicateDoc: (docOrId, collection) ->
+    df = Q.defer()
+    doc = if Types.isObject(docOrId) then docOrId else collection.findOne(docOrId)
+    delete doc._id
+    collection.insert doc, (err, result) -> if err then df.reject(err) else df.resolve(result)
+    df.promise
+
+  removeAllDocs: (collection) ->
+    _.each collection.find().fetch(), (order) ->
+      collection.remove(order._id)
 
   # @param {Object} doc
   # @param {Object} modifier - A MongoDB modifier object.
@@ -248,10 +263,14 @@ Collections =
     tmpCollection.update(insertedId, modifier)
     tmpCollection.findOne(insertedId)
 
+####################################################################################################
+# VALIDATION
+####################################################################################################
+
   # @param {Meteor.Collection} collection
   # @param {Function} validate - A validation method which returns a string on failure or throws
-  # an exception, which causes validation to fail and prevents insert() or update() on the collection
-  # from completing.
+  #      an exception, which causes validation to fail and prevents insert() or update() on the
+  #      collection from completing.
   addValidation: (collection, validate) ->
     collection.before.insert (userId, doc, options) =>
       return if options?.validate == false
@@ -271,9 +290,33 @@ Collections =
     else
       handle(result)
 
-  intersection: (a, b) ->
-    result = @createTemporary()
-    a.find().forEach (item) ->
-      if b.findOne(item._id)
-        result.insert(item)
-    result
+####################################################################################################
+# SANITIZATION
+####################################################################################################
+
+  # @param {Meteor.Collection} collection
+  # @param {Function} sanitize - A sanitization method which is passed a document before insertions
+  #      or updates occur for the given collection. If a MongoDB modifier is returned, it is applied
+  #      to the document before the operation takes place, allowing for any final changes.
+  addSanitization: (collection, sanitize) ->
+    collection.before.insert (userId, doc) =>
+      context = {userId: userId}
+      modifier = sanitize.call(context, doc)
+      if modifier
+        # TODO(aramk) Apply the change directly on the doc for better performance.
+        updatedDoc = @simulateModifierUpdate(doc, modifier)
+        Setter.merge(doc, updatedDoc)
+
+    collection.before.update (userId, doc, fieldNames, modifier) ->
+      updatedDoc = Collections.simulateModifierUpdate(doc, modifier)
+      context = {userId: userId}
+      # sanitizedDoc = Setter.clone(updatedDoc)
+      sanitizeModifier = sanitize.call(context, updatedDoc)
+      return unless sanitizeModifier
+      # docDiff = Objects.diff(updatedDoc, sanitizedDoc)
+      Setter.merge(modifier, sanitizeModifier)
+      # Ensure no fields exist in $unset from $set.
+      $unset = modifier.$unset
+      if $unset
+        _.each $set, (value, key) ->
+          delete $unset[key]
