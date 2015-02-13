@@ -18,8 +18,8 @@ Package.onUse(function(api) {
   // Make these available to the app to allow working with tiem and deferreds.
   api.imply(['mrt:moment', 'aramk:q'], ['client'], ['server'])
   api.export([
-    'Arrays', 'Booleans', 'Collections', 'Dates', 'Maths', 'Objects', 'Promises', 'Setter',
-    'Strings', 'Types'
+    'Arrays', 'Booleans', 'Collections', 'Dates', 'Depends', 'Maths', 'Objects', 'Promises',
+    'Setter', 'Strings', 'Types'
   ], ['client', 'server']);
   api.export([
     'Buffers'
@@ -29,8 +29,8 @@ Package.onUse(function(api) {
   ], 'client');
   api.addFiles([
     'src/Arrays.coffee', 'src/Booleans.coffee', 'src/Collections.coffee', 'src/Dates.coffee',
-    'src/Maths.coffee',  'src/Objects.coffee', 'src/Promises.coffee', 'src/Setter.coffee',
-    'src/Strings.coffee', 'src/Types.coffee'
+    'src/Depends.coffee', 'src/Maths.coffee',  'src/Objects.coffee', 'src/Promises.coffee',
+    'src/Setter.coffee', 'src/Strings.coffee', 'src/Types.coffee'
   ], ['client', 'server']);
   api.addFiles([
     'src/Blobs.coffee', 'src/Forms.coffee', 'src/Templates.coffee', 'src/Window.coffee'
