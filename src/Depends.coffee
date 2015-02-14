@@ -27,6 +27,8 @@ Depends =
     if isCallback
       value = bindMeteor(value)
     df = @_getDeferred(name)
+    if Q.isFulfilled(df.promise)
+      throw new Error('Dependency with name "' + name + '" already defined.')
     log('Defined dependency', name, deps)
     @on(deps).then(
       bindMeteor (depsResult) ->
@@ -66,7 +68,8 @@ Depends =
     promise = Q.all(promises)
     promise.then bindMeteor (results) ->
       log('Dependencies resolved', deps, results)
-      callback?(results)
+      if callback
+        callback.apply(null, results)
       promise
     promise
 

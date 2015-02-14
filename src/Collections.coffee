@@ -6,6 +6,10 @@ Collections =
 # COLLECTIONS
 ####################################################################################################
 
+  # Queue used to prevent interferrence between asychronous use of collections. e.g. Only a single
+  # collection can be created at a time.
+  _queue: null
+
   allow: -> true
   allowAll: -> insert: @allow, update: @allow, remove: @allow
 
@@ -224,6 +228,13 @@ Collections =
             return unless result == 1
             delete idMap[id]
     Q.all(insertPromises).then -> dest
+
+  # Used to ensure operations on collections are run in series. This should be used for creating new
+  # MongoDB collections in asynchronous code to prevent interference.
+  # @returns {Q.Promise} A promise which is resolved once collections are ready to be created.
+  ready: (callback) ->
+    @_queue ?= new DeferredQueue()
+    @_queue.add(callback)
 
 ####################################################################################################
 # DOCS
