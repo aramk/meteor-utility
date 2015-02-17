@@ -50,3 +50,9 @@ Templates =
       value = options.getValue.call($em)
       reactiveVar.set(options.unmarshall(value))
     ), 500))
+
+  bindVarToCheckbox: ($em, reactiveVar, options) ->
+    @bindVarToElement($em, reactiveVar, _.extend({
+      getValue: -> $(@).is(':checked')
+      setValue: (value) -> $(@).prop('checked', value)
+    }, options))

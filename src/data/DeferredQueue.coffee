@@ -18,8 +18,7 @@ class DeferredQueue
     execute = ->
       result = callback()
       Q.when(result).then(df.resolve, df.reject)
-    if Meteor.isServer
-      execute = Meteor.bindEnvironment(execute)
+    execute = Meteor.bindEnvironment(execute)
     if len > 0
       @wait(len - 1).then(execute, df.reject).fin(fin)
     else

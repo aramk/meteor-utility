@@ -5,6 +5,10 @@
       "1.0.1_1"
     ],
     [
+      "aramk:tinycolor",
+      "1.1.0_1"
+    ],
+    [
       "base64",
       "1.0.1"
     ],
@@ -53,6 +57,10 @@
       "1.0.5"
     ],
     [
+      "mrt:moment",
+      "2.8.1"
+    ],
+    [
       "observe-sequence",
       "1.0.3"
     ],
@@ -86,6 +94,6 @@
     ]
   ],
   "pluginDependencies": [],
-  "toolVersion": "meteor-tool@1.0.36",
+  "toolVersion": "meteor-tool@1.0.35",
   "format": "1.0"
 }
