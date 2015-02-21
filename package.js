@@ -23,12 +23,12 @@ Package.onUse(function(api) {
   // https://github.com/aramk/meteor-collection-hooks.git#feature/exceptions
   api.use([
     'aldeed:autoform@4.0.7',
-    'mrt:moment@2.8.1',
+    'momentjs:moment@2.9.0',
     'matb33:collection-hooks@0.7.6'
   ], 'client', {weak: true});
   api.use(['meteorhacks:async@1.0.0'], 'server', {weak: true});
   // Make these available to the app to allow working with tiem and deferreds.
-  api.imply(['mrt:moment', 'aramk:q'], ['client'], ['server'])
+  api.imply(['momentjs:moment', 'aramk:q'], ['client','server'])
   api.export([
     'Arrays',
     'Booleans',
