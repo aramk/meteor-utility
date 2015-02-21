@@ -4,7 +4,7 @@ class DeferredQueue
     @queue = []
 
   wait: (index) ->
-    promise = @queue[index]
+    promise = @queue[index].promise
     if promise
       promise
     else
@@ -13,7 +13,7 @@ class DeferredQueue
   add: (callback) ->
     len = @queue.length
     df = Q.defer()
-    @queue.push(df.promise)
+    @queue.push(df)
     fin = => @queue.shift()
     execute = ->
       result = callback()
@@ -24,3 +24,6 @@ class DeferredQueue
     else
       execute().fin(fin)
     df.promise
+
+  clear: ->
+    _.each @queue, (df) -> df.reject('Clearing DeferredQueue')
