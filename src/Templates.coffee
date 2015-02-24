@@ -48,7 +48,9 @@ Templates =
       options.setValue.call($em, value)
     $em.on(options.changeEvents, _.debounce((->
       value = options.getValue.call($em)
-      reactiveVar.set(options.unmarshall(value))
+      newValue = options.unmarshall(value)
+      if newValue != reactiveVar.get()
+        reactiveVar.set(newValue)
     ), 500))
 
   bindVarToCheckbox: ($em, reactiveVar, options) ->
