@@ -34,7 +34,7 @@ Dates =
     hours.toFixed(2) + ' hours'
 
   # @returns {String}
-  getCurrent: ->moment().format()
+  getCurrent: -> moment().format()
 
   isValidRange: (startDate, endDate) ->
     endDate = moment(endDate)
