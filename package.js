@@ -26,7 +26,9 @@ Package.onUse(function(api) {
     'momentjs:moment@2.9.0',
     'matb33:collection-hooks@0.7.6'
   ], 'client', {weak: true});
-  api.use(['meteorhacks:async@1.0.0'], 'server', {weak: true});
+  // Either of these will contain the Async module, but we don't want to strongly require either
+  // since we don't know which is being used.
+  api.use(['meteorhacks:async@1.0.0', 'meteorhacks:npm@1.2.2'], 'server', {weak: true});
   // Make these available to the app to allow working with tiem and deferreds.
   api.imply(['momentjs:moment', 'aramk:q'], ['client','server'])
   api.export([
