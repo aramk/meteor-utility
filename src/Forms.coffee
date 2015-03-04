@@ -155,8 +155,6 @@ Forms =
       template.isDestroyed = true
       formArgs.onDestroy?.apply(@, arguments)
 
-
-
     getTemplate = Form.getTemplate = (template) -> Templates.getNamedInstance(name, template)
 
     return Form
