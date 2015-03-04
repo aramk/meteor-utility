@@ -26,7 +26,7 @@ Forms =
         console.debug 'onSubmit', args, @
         result = formArgs.onSubmit?.apply(@, args)
         formTemplate = getTemplate(template)
-        callback = -> formTemplate.data?.settings?.onSubmit?.apply(@, args)
+        callback = -> formTemplate.settings.onSubmit?.apply(@, args)
         deferCallback(result, callback)
         return result if result?
 
@@ -36,7 +36,7 @@ Forms =
         console.debug 'onSuccess', args, @
         AutoForm.resetForm(name)
         result = formArgs.onSuccess?.apply(@, args)
-        callback = -> formTemplate.data?.settings?.onSuccess?.apply(@, args)
+        callback = -> formTemplate.settings.onSuccess?.apply(@, args)
         deferCallback(result, callback)
 
       onError: (operation, error, template) ->
@@ -76,9 +76,10 @@ Forms =
         console.debug 'onCancel', arguments, @
         formArgs.onCancel?(template)
         formTemplate = getTemplate(template)
-        formTemplate.data?.settings?.onCancel?()
+        formTemplate.settings.onCancel?()
 
     Form.created = ->
+      @settings = @data.settings ? {}
       formArgs.onCreate?.apply(@, arguments)
 
     Form.rendered = ->
