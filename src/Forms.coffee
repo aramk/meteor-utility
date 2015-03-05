@@ -24,11 +24,13 @@ Forms =
         args = arguments
         template = @template
         console.debug 'onSubmit', args, @
-        result = formArgs.onSubmit?.apply(@, args)
+        onSubmit = formArgs.onSubmit ? formArgs.hooks?.onSubmit
+        result = onSubmit?.apply(@, args)
         formTemplate = getTemplate(template)
-        callback = -> formTemplate.settings.onSubmit?.apply(@, args)
+        callback = => formTemplate.settings.onSubmit?.apply(@, args)
         deferCallback(result, callback)
-        return result if result?
+        # If no result is provided, prevent the form submission from refreshing the page.
+        return (result ? false)
 
       onSuccess: (operation, result, template) ->
         args = arguments
@@ -36,7 +38,7 @@ Forms =
         console.debug 'onSuccess', args, @
         AutoForm.resetForm(name)
         result = formArgs.onSuccess?.apply(@, args)
-        callback = -> formTemplate.settings.onSuccess?.apply(@, args)
+        callback = => formTemplate.settings.onSuccess?.apply(@, args)
         deferCallback(result, callback)
 
       onError: (operation, error, template) ->
@@ -86,10 +88,12 @@ Forms =
       console.debug 'Rendered form', @, arguments
       # Move the buttons to the same level as the title and content to allow using flex-layout.
       $buttons = @$('.crud.buttons')
-      $crudForm = @$('.flex-panel')
+      $crudForm = @$('.flex-panel:first')
       if $buttons.length > 0 && $crudForm.length > 0
         $crudForm.append($buttons)
-      @$('[type="submit"]', $buttons).click => @$('form', $crudForm).submit()
+      @$('[type="submit"]', $buttons).click =>
+        $form = $(@find('form', $crudForm))
+        $form.submit()
 
       @schemaInputs = Forms.getSchemaInputs(@, formArgs.schema ? formArgs.collection)
 

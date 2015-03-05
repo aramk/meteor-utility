@@ -21,4 +21,5 @@ Functions =
         press(arguments, true)
         return
       call(arguments)
+      return
     wrapped
