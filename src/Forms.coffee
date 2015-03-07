@@ -37,12 +37,15 @@ Forms =
         formTemplate = getTemplate(template)
         console.debug 'onSuccess', args, @
         AutoForm.resetForm(name)
-        result = formArgs.onSuccess?.apply(@, args)
+        onSuccess = formArgs.onSuccess ? formArgs.hooks?.onSuccess
+        result = onSuccess?.apply(@, args)
         callback = => formTemplate.settings.onSuccess?.apply(@, args)
         deferCallback(result, callback)
 
       onError: (operation, error, template) ->
         console.error('Error submitting form', operation, error, template)
+        onError = formArgs.onError ? formArgs.hooks?.onError
+        onError?.apply(@, args)
         throw new Error(error)
 
       before:
