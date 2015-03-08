@@ -38,7 +38,7 @@ Templates =
     options = _.extend({
       template: Template.instance()
       marshall: (value) -> value
-      unmarshall: (value) -> return value
+      unmarshall: (value) -> value
       getValue: -> $(this).val()
       setValue: (value) -> $(this).val(value)
       changeEvents: 'change keyup'
