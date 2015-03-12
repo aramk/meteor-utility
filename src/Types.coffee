@@ -4,7 +4,7 @@ Types =
     Object.prototype.toString.call(object).slice(8, -1)
 
   isType: (object, type) ->
-    if !object then false else this.getTypeOf(object) == type
+    if object? then this.getTypeOf(object) == type else object == type
 
   isObject: (object) ->
     object && typeof object == 'object'

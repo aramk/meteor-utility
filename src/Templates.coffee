@@ -42,16 +42,19 @@ Templates =
       getValue: -> $(this).val()
       setValue: (value) -> $(this).val(value)
       changeEvents: 'change keyup'
+      debounce: true
     }, options)
     options.template.autorun ->
       value = options.marshall(reactiveVar.get())
       options.setValue.call($em, value)
-    $em.on(options.changeEvents, _.debounce((->
+    update = ->
       value = options.getValue.call($em)
       newValue = options.unmarshall(value)
       if newValue != reactiveVar.get()
         reactiveVar.set(newValue)
-    ), 500))
+    if options.debounce
+      update = _.debounce(update, 500)
+    $em.on(options.changeEvents, update)
 
   bindVarToCheckbox: ($em, reactiveVar, options) ->
     @bindVarToElement($em, reactiveVar, _.extend({
