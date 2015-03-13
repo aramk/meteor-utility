@@ -57,8 +57,8 @@
       "1.0.5"
     ],
     [
-      "mrt:moment",
-      "2.8.1"
+      "momentjs:moment",
+      "2.9.0"
     ],
     [
       "observe-sequence",
@@ -94,6 +94,6 @@
     ]
   ],
   "pluginDependencies": [],
-  "toolVersion": "meteor-tool@1.0.35",
+  "toolVersion": "meteor-tool@1.0.36",
   "format": "1.0"
 }
