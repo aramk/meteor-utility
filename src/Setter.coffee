@@ -34,4 +34,4 @@ Setter =
 
  # @param {*} value
  # @returns Whether the given value is not an non-empty string, null, undefined or NaN.
-  isDefined: (value) -> value != '' && value? && !isNaN(value)
+  isDefined: (value) -> value != '' && value? && (!Types.isNumber(value) || !isNaN(value))
