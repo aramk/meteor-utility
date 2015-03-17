@@ -260,8 +260,12 @@ Collections =
     df.promise
 
   removeAllDocs: (collection) ->
-    _.each collection.find().fetch(), (order) ->
-      collection.remove(order._id)
+    docs = null
+    # Non-reactive to ensure this command doesn't re-run when the collection changes.
+    Tracker.nonreactive ->
+      docs = collection.find().fetch()
+    _.each docs, (doc) ->
+      collection.remove(doc._id)
 
   # @param {Object} doc
   # @param {Object} modifier - A MongoDB modifier object.
