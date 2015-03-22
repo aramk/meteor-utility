@@ -100,7 +100,7 @@ Dates =
   # @param {Number} [utcOffset] - The UTC offset in minutes. If not provided, the date must be a
   #     string with a UTC offset. Otherwise, automatic conversion to the local timezone will prevent
   #     determining the offset of the original date.
-  # @returns {Moment}
+  # @returns {Moment} The given date in the given UTC offset.
   getByOffset: (date, utcOffset) ->
     if !Types.isString(date) && !utcOffset
       throw new Error('Date must be string to prevent automatic conversion to local timezone, ' +

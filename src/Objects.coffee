@@ -21,6 +21,27 @@ Objects =
         @addRecursiveProperty(obj, keys, value)
         delete obj[origKey]
 
+  getModifierProperty: (obj, property) ->
+    target = obj
+    segments = property.split('.')
+    unless segments.length > 0
+      return undefined
+    for key in segments
+      target = target[key]
+      unless target?
+        break
+    target
+
+  setModifierProperty: (obj, property, value) ->
+    segments = property.split('.')
+    unless segments.length > 0
+      return false
+    lastSegment = segments.pop()
+    target = obj
+    for key in segments
+      target = target[key] ?= {}
+    target[lastSegment] = value
+    true
 
   # Visits all object leaves in the given object.
   traverseLeaves: (obj, callback) ->
