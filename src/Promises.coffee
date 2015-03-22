@@ -2,13 +2,12 @@ Promises =
 
   serverMethodCall: ->
     df = Q.defer()
-    hasCallback = Types.isFunction(callback)
     args = Array.prototype.slice.apply(arguments)
+    hasCallback = Types.isFunction(_.last(args))
     if hasCallback
       callback = args.pop()
     wrappedCallback = Meteor.bindEnvironment (err, result) ->
-      if hasCallback
-        callback(err, result)
+      callback?(err, result)
       if err then df.reject(err) else df.resolve(result)
     args.push(wrappedCallback)
     Meteor.call.apply(Meteor, args)

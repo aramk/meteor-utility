@@ -1,5 +1,7 @@
 Functions =
 
+  # Similar to _.debounce, but the initial call will excute the given function instead of waiting
+  # for the given delay.
   debounceLeft: (func, delay) ->
     isPressed = false
     handle = null
