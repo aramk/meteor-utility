@@ -164,6 +164,9 @@ Forms =
 
     getTemplate = Form.getTemplate = (template) -> Templates.getNamedInstance(name, template)
 
+    Form.getElement = -> getTemplate().$('form:first')
+    Form.getFieldElement = (name) -> Forms.getFieldElement(name, Form.getElement())
+
     return Form
 
   addRequiredLabel: ($label) ->
