@@ -8,14 +8,9 @@ Forms =
     unless Form
       throw new Error 'No template defined with name ' + name
 
-    deferCallback = (result, callback) ->
-      # Defer the callback if the result is a promise. Ignore if result is false. Otherwise execute
-      # callback immediately.
-      unless result == false
-        if result?.then
-          result.then -> callback()
-        else
-          callback()
+    ################################################################################################
+    # HOOKS
+    ################################################################################################
 
     AutoForm.addHooks name,
       # Settings should be passed to the autoForm helper to ensure they are available in these
@@ -29,6 +24,9 @@ Forms =
         formTemplate = getTemplate(template)
         callback = => formTemplate.settings.onSubmit?.apply(@, args)
         deferCallback(result, callback)
+        # Perform logic for submitting bulk forms.
+        if Form.isBulk(template)
+          Form.submitBulkForm(insertDoc, updateDoc, currentDoc, @, template)
         # If no result is provided, prevent the form submission from refreshing the page.
         return (result ? false)
 
@@ -59,21 +57,35 @@ Forms =
     if formArgs.hooks?
       AutoForm.addHooks name, formArgs.hooks
 
+    ################################################################################################
+    # HELPERS
+    ################################################################################################
+
     Form.helpers
-      collection: -> Collections.get(formArgs.collection)
-      schema: -> formArgs.schema
+      collection: -> Form.getCollection()
+      schema: ->
+        if Form.isBulk()
+          Form.getBulkSchema()
+        else
+          Form.getSchema()
       formName: -> name
     # Without this a separate copy is passed across, which doesn't allow sharing data between
     # create method and form hooks.
-      doc: -> @doc
-      formTitle: ->
-        collectionName = Collections.getTitle(formArgs.collection)
-        (if @doc then 'Edit' else 'Create') + ' ' + Strings.singular(collectionName)
+      doc: -> Form.getValues()
+      formTitle: -> Form.getFormTitle()
       formType: ->
+        return if Form.isBulk()
+        doc = Form.getDocs()[0]
         type = formArgs.type
         return type if type
-        if @doc then 'update' else 'insert'
-      submitText: -> if @doc then 'Save' else 'Create'
+        if doc then 'update' else 'insert'
+      submitText: -> if Form.getDocs().length > 0 then 'Save' else 'Create'
+      hasDoc: -> Form.hasDoc()
+      isBulk: -> Form.isBulk()
+
+    ################################################################################################
+    # EVENTS
+    ################################################################################################
 
     Form.events
       'click button.cancel': (e, template) ->
@@ -83,8 +95,14 @@ Forms =
         formTemplate = getTemplate(template)
         formTemplate.settings.onCancel?()
 
+    ################################################################################################
+    # LIFECYCLE
+    ################################################################################################
+
     Form.created = ->
       @settings = @data.settings ? {}
+      @docs = Form.parseDocs()
+      @data.doc = Form.getValues()
       formArgs.onCreate?.apply(@, arguments)
 
     Form.rendered = ->
@@ -92,17 +110,16 @@ Forms =
       # Move the buttons to the same level as the title and content to allow using flex-layout.
       $buttons = @$('.crud.buttons')
       $crudForm = @$('.flex-panel:first')
+      $form = Forms.getFormElement(@)
       if $buttons.length > 0 && $crudForm.length > 0
         $crudForm.append($buttons)
-      @$('[type="submit"]', $buttons).click =>
-        $form = $(@find('form', $crudForm))
-        $form.submit()
+      @$('[type="submit"]', $buttons).click => $form.submit()
 
-      @schemaInputs = Forms.getSchemaInputs(@, formArgs.schema ? formArgs.collection)
+      schemaInputs = Form.getSchemaInputs()
 
       popupInputs = []
       hasRequiredField = false
-      for key, input of @schemaInputs
+      _.each schemaInputs, (input, key) ->
         $input = $(input.node)
         field = input.field
         desc = field.desc
@@ -154,6 +171,7 @@ Forms =
       @autorun (c) ->
         helpMode = Session.get 'helpMode'
         if helpMode then addPopups() else removePopups()
+      
       formArgs.onRender?.apply(@, arguments)
 
     Form.destroyed = ->
@@ -162,12 +180,151 @@ Forms =
       template.isDestroyed = true
       formArgs.onDestroy?.apply(@, arguments)
 
+    ################################################################################################
+    # AUXILIARY
+    ################################################################################################
+
+    Form.parseDocs = (template) ->
+      template = getTemplate(template)
+      data = template.data
+      if data.docs?
+        docs = data.docs
+      else if data.doc?
+        docs = [data.doc]
+      else
+        docs = []
+      _.map docs, (doc) ->
+        if Types.isString(doc)
+          Form.getCollection().findOne(doc)
+        else
+          doc
+
+    Form.getFormTitle = ->
+      collectionName = Collections.getTitle(formArgs.collection)
+      docs = Form.getDocs()
+      suffix = Strings.pluralize(Strings.singular(collectionName), docs, collectionName)
+      if Form.isBulk()
+        suffix = docs.length + ' ' + suffix
+      (if docs.length > 0 then 'Edit' else 'Create') + ' ' + suffix
+
+    Form.getCollection = -> Collections.get(formArgs.collection)
+
+    Form.getSchema = -> Collections.getSchema(formArgs.schema ? Form.getCollection())
+
+    ################################################################################################
+    # AUXILIARY
+    ################################################################################################
+
     getTemplate = Form.getTemplate = (template) -> Templates.getNamedInstance(name, template)
 
-    Form.getElement = -> getTemplate().$('form:first')
-    Form.getFieldElement = (name) -> Forms.getFieldElement(name, Form.getElement())
+    Form.getElement = (template) -> Forms.getFormElement(getTemplate(template))
+
+    Form.getFieldElement = (name, template) ->
+      Forms.getFieldElement(name, Form.getElement(), template)
+
+    Form.getSchemaInputs = (template) ->
+      template = getTemplate(template)
+      Forms.getSchemaInputs(template, formArgs.schema ? formArgs.collection)
+
+    Form.getValues = (template) ->
+      if Form.isBulk(template)
+        Form.getBulkValues(template)
+      else
+        Form.getDocs(template)[0] ? {}
+
+    ################################################################################################
+    # BULK EDITING
+    ################################################################################################
+
+    Form.getDocs = (template) -> getTemplate(template).docs
+
+    Form.hasDoc = (template) -> Form.getDocs(template).length > 0
+    
+    Form.isBulk = (template) -> Form.getDocs(template).length > 1
+    
+    Form.clearFieldValues = (template) ->
+      template = getTemplate(template)
+      schemaInputs = Form.getSchemaInputs(template)
+      _.each schemaInputs, (input, key) ->
+        $input = $(input.node)
+        Forms.setInputValue($input, null)
+
+    Form.setFieldValues = (template, values) ->
+      template = getTemplate(template)
+      $form = Forms.getFormElement(template)
+      _.each values, (value, key) ->
+        $input = Forms.getFieldElement(key, $form)
+        Forms.setInputValue($input, value)
+
+    Form.getBulkValues = (template) ->
+      values = {}
+      template = getTemplate(template)
+      docs = Form.getDocs(template)
+      otherDocs = docs.slice(1)
+      getValue = (doc, key) -> Objects.getModifierProperty(doc, key)
+      # Populate all form fields with any common values across docs if possible.
+      fields = Collections.getFields(Form.getCollection())
+      _.each fields, (field, fieldId) ->
+        commonValue = getValue(docs[0], fieldId)
+        hasCommonValue = _.all otherDocs, (doc) ->
+          commonValue == getValue(doc, fieldId)
+        if hasCommonValue && commonValue?
+          Objects.setModifierProperty(values, fieldId, commonValue)
+      values
+
+    Form.submitBulkForm = (insertDoc, updateDoc, currentDoc, context, template) ->
+      template = getTemplate(template)
+      oldValues = Form.getBulkValues(template)
+      # TODO(aramk) if values are not present in insertDoc but are in oldValues then put them in
+      # $unset.
+      flatOldValues = Objects.flattenProperties(oldValues)
+      flatNewValues = Objects.flattenProperties(insertDoc)
+      # Only keep the fields which exist in the form so any values which exist in the doc but don't
+      # exist as inputs are not removed.
+      _.each flatOldValues, (value, key) ->
+        unless Form.getFieldElement(key, template).length > 0
+          delete flatOldValues[key]
+      $unset = {}
+      $set = flatNewValues
+      modifier = {}
+      _.each flatOldValues, (value, key) ->
+        if flatNewValues[key]?
+          if flatNewValues[key] == flatOldValues[key]
+            delete flatNewValues[key]
+        else
+          $unset[key] = null
+      if Object.keys($set).length > 0
+        modifier.$set = $set
+      if Object.keys($unset).length > 0
+        modifier.$unset = $unset
+      promises = []
+      _.each Form.getDocs(template), (doc) ->
+        df = Q.defer()
+        promises.push(df.promise)
+        Form.getCollection().update doc._id, modifier, (err, result) ->
+          if err then df.reject(err) else df.resolve(result)
+      Q.all(promises).then(
+        -> context.done()
+        (err) -> context.done(err)
+      )
+      # Prevent submission since it's asynchronous.
+      return false
+
+    Form.getBulkSchema = (template) ->
+      # Create a copy of the schema with all fields as optional to allow submitting a partial
+      # set of values.
+      template = getTemplate(template)
+      schema = Form.getSchema(template)
+      schemaArgs = Setter.clone(schema._schema)
+      _.each schemaArgs, (field, fieldId) ->
+        field.optional = true
+      new SimpleSchema(schemaArgs)
 
     return Form
+
+  ##################################################################################################
+  # STATICS
+  ##################################################################################################
 
   addRequiredLabel: ($label) ->
     $requiredContent = $('<div class="required"></div>')
@@ -198,6 +355,8 @@ Forms =
       $input.val()
 
   getFieldElement: (name, formElement) -> $('[data-schema-key="' + name + '"]', formElement)
+
+  getFormElement: (template) -> template.$('form:first')
 
   isSelectInput: ($input) -> $input.is('select') || @isDropdown($input)
 
@@ -249,3 +408,16 @@ Forms =
         else
           console.warn('Unrecognised data-schema-key', key, 'for schema', schema)
     schemaInputs
+
+####################################################################################################
+# MISC AUXILIARY
+####################################################################################################
+
+deferCallback = (result, callback) ->
+  # Defer the callback if the result is a promise. Ignore if result is false. Otherwise execute
+  # callback immediately.
+  unless result == false
+    if result?.then
+      result.then -> callback()
+    else
+      callback()

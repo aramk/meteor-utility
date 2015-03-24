@@ -335,3 +335,26 @@ Collections =
       if $unset
         _.each $set, (value, key) ->
           delete $unset[key]
+
+####################################################################################################
+# SCHEMAS
+####################################################################################################
+
+  getField: (fieldId, arg) -> @getSchema(arg).schema(fieldId)
+
+  # Traverse the given schema and call the given callback with the field schema and ID.
+  forEachFieldSchema: (arg, callback) ->
+    schema = Collections.getSchema(arg)
+    fieldIds = schema._schemaKeys
+    for fieldId in fieldIds
+      fieldSchema = schema.schema(fieldId)
+      if fieldSchema?
+        callback(fieldSchema, fieldId)
+
+  getFields: (arg) ->
+    fields = {}
+    @forEachFieldSchema Collections.getSchema(arg), (field, fieldId) ->
+      fields[fieldId] = field
+    fields
+
+

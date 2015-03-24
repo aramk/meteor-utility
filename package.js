@@ -28,7 +28,15 @@ Package.onUse(function(api) {
   ], 'client', {weak: true});
   // Either of these will contain the Async module, but we don't want to strongly require either
   // since we don't know which is being used.
-  api.use(['meteorhacks:async@1.0.0', 'meteorhacks:npm@1.2.2'], 'server', {weak: true});
+  api.use([
+    'meteorhacks:async@1.0.0',
+    'meteorhacks:npm@1.2.2'
+  ], 'server', {weak: true});
+  api.use([
+    'aldeed:simple-schema@1.3.0',
+    'aldeed:collection2@2.3.2',
+    'aldeed:autoform@4.0.7'
+  ], ['client', 'server'], {weak: true});
   // Make these available to the app to allow working with tiem and deferreds.
   api.imply(['momentjs:moment', 'aramk:q'], ['client','server'])
   api.export([

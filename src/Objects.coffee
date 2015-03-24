@@ -15,11 +15,22 @@ Objects =
   # The given callback must return an array of keys for each key in the object. These keys are then
   # used to recursively redefine the properties, storing the original values.
   unflattenProperties: (obj, callback) ->
+    callback ?= (key) -> key.split('.')
     for origKey, value of obj
       keys = callback(origKey)
       if keys?
         @addRecursiveProperty(obj, keys, value)
         delete obj[origKey]
+
+  flattenProperties: (obj) ->
+    flattened = {}
+    _.each obj, (value, key) =>
+      if Types.isObjectLiteral(value)
+        _.each @flattenProperties(value), (flatValue, flatKey) ->
+          flattened[key + '.' + flatKey] = flatValue
+      else
+        flattened[key] = value
+    flattened
 
   getModifierProperty: (obj, property) ->
     target = obj

@@ -36,7 +36,6 @@ Templates =
     unless reactiveVar instanceof ReactiveVar
       throw new Error('Invalid reactive variable')
     options = _.extend({
-      template: Template.instance()
       marshall: (value) -> value
       unmarshall: (value) -> value
       getValue: -> $(this).val()
@@ -44,6 +43,7 @@ Templates =
       changeEvents: 'change keyup'
       debounce: true
     }, options)
+    options.template ?= Template.instance()
     options.template.autorun ->
       value = options.marshall(reactiveVar.get())
       options.setValue.call($em, value)
@@ -61,3 +61,13 @@ Templates =
       getValue: -> $(@).is(':checked')
       setValue: (value) -> $(@).prop('checked', value)
     }, options))
+
+  bindSessionToElement: ($em, sessionVarName, options) ->
+    reactiveVar = new ReactiveVar(null)
+    options = _.extend({
+      template: Template.instance()
+    }, options)
+    options.template.autorun ->
+      value = Session.get(sessionVarName)
+      reactiveVar.set(value)
+    @bindVarToElement($em, reactiveVar, options)
