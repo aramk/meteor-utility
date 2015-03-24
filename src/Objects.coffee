@@ -19,8 +19,9 @@ Objects =
     for origKey, value of obj
       keys = callback(origKey)
       if keys?
-        @addRecursiveProperty(obj, keys, value)
         delete obj[origKey]
+        @addRecursiveProperty(obj, keys, value)
+    obj
 
   flattenProperties: (obj) ->
     flattened = {}
