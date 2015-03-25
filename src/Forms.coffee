@@ -52,6 +52,17 @@ Forms =
           doc
         update: (docId, modifier, template) ->
           console.debug('before update', docId, modifier)
+          # Remove the items in $unset which don't exist as fields in the form.
+          $unset = modifier.$unset
+          if Object.keys($unset).length >= 0
+            schemaInputs = Form.getSchemaInputs(template)
+            fieldIds = []
+            _.each schemaInputs, (input, key) ->
+              fieldIds.push(key) if $(input).length > 0
+            remFieldIds = _.difference(Object.keys($unset), fieldIds)
+            _.each remFieldIds, (fieldId) ->
+              delete $unset[fieldId]
+          console.log('modifier', modifier)
           modifier
 
     if formArgs.hooks?
@@ -171,6 +182,9 @@ Forms =
       @autorun (c) ->
         helpMode = Session.get 'helpMode'
         if helpMode then addPopups() else removePopups()
+
+      # if Form.isBulk()
+      #   Form.setUpBulkFields()
       
       formArgs.onRender?.apply(@, arguments)
 
@@ -319,6 +333,33 @@ Forms =
       _.each schemaArgs, (field, fieldId) ->
         field.optional = true
       new SimpleSchema(schemaArgs)
+
+    Form.setUpBulkFields = (template) ->
+      template = getTemplate(template)
+
+      values = Form.getBulkValues()
+
+      schemaInputs = Form.getSchemaInputs(template)
+      _.each schemaInputs, (input, key) ->
+        $input = $(input.node)
+        value = Objects.getModifierProperty(values, key)
+        if Setter.isDefined(value)
+          placeholder = ''
+        else
+
+        $input.attr('placeholder', placeholder)
+
+    Form.getSampleValues = (paramId, template) ->
+      template = getTemplate(template)
+      docs = Form.getDocs()
+      values = []
+      count = 0
+      _.some docs, (doc) ->
+        value = Objects.getModifierProperty(doc, paramId)
+        if Setter.isDefined(value)
+          values.push(value)
+          count++
+        return count >= 3
 
     return Form
 
