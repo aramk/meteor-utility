@@ -30,3 +30,10 @@ Maths =
   sum: (array, getValue) ->
     getValue ?= (item) -> item
     _.reduce array, ((memo, item) -> memo + getValue(item)), 0
+
+  mean: (array) ->
+    len = array.length
+    unless len > 0
+      return null
+    @sum(array) / len
+

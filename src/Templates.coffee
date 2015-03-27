@@ -42,6 +42,7 @@ Templates =
       setValue: (value) -> $(this).val(value)
       changeEvents: 'change keyup'
       debounce: true
+      delay: 500
     }, options)
     options.template ?= Template.instance()
     options.template.autorun ->
@@ -53,7 +54,7 @@ Templates =
       if newValue != reactiveVar.get()
         reactiveVar.set(newValue)
     if options.debounce
-      update = _.debounce(update, 500)
+      update = _.debounce(update, options.delay)
     $em.on(options.changeEvents, update)
 
   bindVarToCheckbox: ($em, reactiveVar, options) ->

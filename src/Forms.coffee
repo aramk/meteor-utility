@@ -336,9 +336,7 @@ Forms =
 
     Form.setUpBulkFields = (template) ->
       template = getTemplate(template)
-
       values = Form.getBulkValues()
-
       schemaInputs = Form.getSchemaInputs(template)
       _.each schemaInputs, (input, key) ->
         $input = $(input.node)
