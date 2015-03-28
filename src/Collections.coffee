@@ -340,7 +340,11 @@ Collections =
 # SCHEMAS
 ####################################################################################################
 
-  getField: (fieldId, arg) -> @getSchema(arg).schema(fieldId)
+  getField: (arg, fieldId) ->
+    schema = @getSchema(arg)
+    unless schema
+      throw new Error('Count not determine schema from: ' + arg)
+    schema.schema(fieldId)
 
   # Traverse the given schema and call the given callback with the field schema and ID.
   forEachFieldSchema: (arg, callback) ->

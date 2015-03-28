@@ -31,13 +31,14 @@ Templates =
 
   bindVarToElement: ($em, reactiveVar, options) ->
     $em = $($em)
+    isNumber = $em.attr('type') == 'number'
     if $em.length == 0
       throw new Error('Invalid element')
     unless reactiveVar instanceof ReactiveVar
       throw new Error('Invalid reactive variable')
     options = _.extend({
       marshall: (value) -> value
-      unmarshall: (value) -> value
+      unmarshall: (value) -> if isNumber then parseFloat(value) else value
       getValue: -> $(this).val()
       setValue: (value) -> $(this).val(value)
       changeEvents: 'change keyup'
@@ -64,11 +65,14 @@ Templates =
     }, options))
 
   bindSessionToElement: ($em, sessionVarName, options) ->
-    reactiveVar = new ReactiveVar(null)
+    reactiveVar = new ReactiveVar()
     options = _.extend({
       template: Template.instance()
     }, options)
     options.template.autorun ->
       value = Session.get(sessionVarName)
       reactiveVar.set(value)
+    options.template.autorun ->
+      value = reactiveVar.get()
+      Session.set(sessionVarName, value)
     @bindVarToElement($em, reactiveVar, options)
