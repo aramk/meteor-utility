@@ -31,14 +31,25 @@ Templates =
 
   bindVarToElement: ($em, reactiveVar, options) ->
     $em = $($em)
-    isNumber = $em.attr('type') == 'number'
     if $em.length == 0
       throw new Error('Invalid element')
     unless reactiveVar instanceof ReactiveVar
       throw new Error('Invalid reactive variable')
+    isNumber = $em.attr('type') == 'number'
+    min = parseFloat($em.attr('min'))
+    max = parseFloat($em.attr('max'))
     options = _.extend({
       marshall: (value) -> value
-      unmarshall: (value) -> if isNumber then parseFloat(value) else value
+      unmarshall: (value) ->
+        if isNumber
+          value = parseFloat(value)
+          unless Numbers.isDefined(value)
+            value = null
+          else if Numbers.isDefined(min) && value < min
+            value = min
+          else if Numbers.isDefined(max) && value > max
+            value = max
+        value
       getValue: -> $(this).val()
       setValue: (value) -> $(this).val(value)
       changeEvents: 'change keyup'
@@ -54,6 +65,7 @@ Templates =
       newValue = options.unmarshall(value)
       if newValue != reactiveVar.get()
         reactiveVar.set(newValue)
+      options.setValue.call($em, newValue)
     if options.debounce
       update = _.debounce(update, options.delay)
     $em.on(options.changeEvents, update)
@@ -65,7 +77,11 @@ Templates =
     }, options))
 
   bindSessionToElement: ($em, sessionVarName, options) ->
-    reactiveVar = new ReactiveVar()
+    reactiveVar = @bindVarToSession(null, sessionVarName, options)
+    @bindVarToElement($em, reactiveVar, options)
+
+  bindVarToSession: (reactiveVar, sessionVarName, options) ->
+    reactiveVar ?= new ReactiveVar()
     options = _.extend({
       template: Template.instance()
     }, options)
@@ -75,4 +91,5 @@ Templates =
     options.template.autorun ->
       value = reactiveVar.get()
       Session.set(sessionVarName, value)
-    @bindVarToElement($em, reactiveVar, options)
+    reactiveVar
+
