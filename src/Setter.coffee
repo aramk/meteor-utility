@@ -25,8 +25,11 @@ Setter =
       lodash.merge(dest, arg)
     dest
 
-  clone: (src) ->
-    lodash.cloneDeep(src)
+  clone: (src, args) ->
+    if args?.shallow == true
+      lodash.clone(src)
+    else
+      lodash.cloneDeep(src)
 
    # Deeply merges defaults, relying on _.merge(a,b) returning a if it isn't an object to prevent
    # source property values overriding their defined destinations.

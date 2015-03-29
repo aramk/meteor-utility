@@ -421,8 +421,8 @@ Forms =
 
   isDropdown: ($input) -> Template.dropdown.isDropdown($input)
 
-# We may pass the temporary collection as an attribute to autoform templates, so we need to
-# define this to avoid errors since it is passed into the actual <form> HTML object.
+  # We may pass the temporary collection as an attribute to autoform templates, so we need to
+  # define this to avoid errors since it is passed into the actual <form> HTML object.
   preventText: (obj) ->
     obj.toText = -> ''
     obj
