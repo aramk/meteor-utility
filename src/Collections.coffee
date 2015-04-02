@@ -349,6 +349,8 @@ Collections =
   # Traverse the given schema and call the given callback with the field schema and ID.
   forEachFieldSchema: (arg, callback) ->
     schema = Collections.getSchema(arg)
+    unless schema
+      throw new Error('Count not determine schema from: ' + arg)
     fieldIds = schema._schemaKeys
     for fieldId in fieldIds
       fieldSchema = schema.schema(fieldId)
