@@ -48,6 +48,8 @@ Log =
     args = Array.prototype.slice.call(args)
     args.splice(0, 0, '[' + msg + '] ')
     func.apply(console, args)
+    # Logging should have no return.
+    return undefined
 
   trace: ->
     e = new Error('dummy')
