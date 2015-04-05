@@ -43,7 +43,7 @@ Collections =
       arg
     else
       collection = @get(arg)
-      collection.find()
+      if collection? then collection.find() else null
 
   # @param {String|Meteor.Collection|Cursor|SimpleSchema} arg
   # @returns {SimpleSchema}
@@ -72,8 +72,7 @@ Collections =
 
   # @param obj
   # @returns {Boolean} Whether the given object is a collection.
-  isCollection: (obj) ->
-    obj instanceof Meteor.Collection
+  isCollection: (obj) -> obj instanceof Meteor.Collection || obj instanceof LocalCollection
 
   # @param obj
   # @returns {Boolean} Whether the given object is a collection cursor.
