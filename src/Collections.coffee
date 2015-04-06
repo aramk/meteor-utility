@@ -126,9 +126,6 @@ Collections =
   # @returns {String} Generates a MongoDB ObjectID hex string.
   generateId: -> new Mongo.ObjectID().toHexString()
 
-  insertAll: (docs, collection) ->
-    _.each docs, (doc) -> collection.insert(doc)
-
   intersection: (a, b) ->
     result = @createTemporary()
     a.find().forEach (item) ->
@@ -257,6 +254,8 @@ Collections =
     delete doc._id
     collection.insert doc, (err, result) -> if err then df.reject(err) else df.resolve(result)
     df.promise
+
+  insertAll: (docs, collection) -> _.each docs, (doc) -> collection.insert(doc)
 
   removeAllDocs: (collection) ->
     docs = null
