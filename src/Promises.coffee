@@ -16,12 +16,13 @@ Promises =
   runSync: (callback) ->
     response = Async.runSync (done) ->
       try
-        result = callback(done)
-        if result?.then?
-          result.then(
-            (result) -> done(null, result)
-            (err) -> done(err, null)
-          )
+        callbackResult = callback(done)
+        # If returning a deferred object, use the then() method. Otherwise, the callback should use
+        # the done() method.
+        callbackResult?.then?(
+          (result) -> done(null, result)
+          (err) -> done(err, null)
+        )
       catch err
         done(err, null)
     if response.error
