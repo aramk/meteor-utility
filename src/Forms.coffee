@@ -244,7 +244,7 @@ Forms =
       if Form.isBulk(template)
         Form.getBulkValues(template)
       else
-        Form.getDocs(template)[0] ? {}
+        Form.getDocs(template)[0] ? null
 
     ################################################################################################
     # BULK EDITING
