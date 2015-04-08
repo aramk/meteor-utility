@@ -1,8 +1,8 @@
 aramk:q@1.0.1_1
 aramk:tinycolor@1.1.0_1
-aramk:utility@0.8.2
+aramk:utility@0.8.3
 base64@1.0.3
-blaze@2.1.1
+blaze@2.1.2
 blaze-tools@1.0.3
 coffeescript@1.0.6
 deps@1.0.7
