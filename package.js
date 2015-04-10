@@ -35,7 +35,9 @@ Package.onUse(function(api) {
   ], 'server', {weak: true});
   api.use([
     'aldeed:simple-schema@1.3.0',
-    'aldeed:collection2@2.3.2',
+    'aldeed:collection2@2.3.2'
+  ], ['client', 'server']);
+  api.use([
     'aldeed:autoform@4.0.7'
   ], ['client', 'server'], {weak: true});
   // Make these available to the app to allow working with tiem and deferreds.
