@@ -49,6 +49,7 @@ Package.onUse(function(api) {
     'Colors',
     'Dates',
     'DeferredQueue',
+    'DeferredQueueSet',
     'DeferredQueueMap',
     'Depends',
     'Functions',

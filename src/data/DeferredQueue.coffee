@@ -25,5 +25,9 @@ class DeferredQueue
       execute().fin(fin)
     df.promise
 
+  size: -> @queue.length
+
+  getItems: -> _.clone(@queue)
+
   clear: ->
     _.each @queue, (df) -> df.reject('Clearing DeferredQueue')
