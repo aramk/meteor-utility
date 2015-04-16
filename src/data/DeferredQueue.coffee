@@ -10,6 +10,8 @@ class DeferredQueue
     else
       Q.when(null)
 
+  waitForAll: -> Q.all _.map @queue, (df) -> df.promise
+
   add: (callback) ->
     len = @queue.length
     df = Q.defer()

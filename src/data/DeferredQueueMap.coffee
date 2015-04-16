@@ -13,5 +13,11 @@ class DeferredQueueMap
     else
       queue.add(callback)
 
-  clear: ->
-    _.each @queues, (queue) -> queue.clear()
+  clear: -> _.each @queues, (queue) -> queue.clear()
+
+  wait: (id) ->
+    queue = @queues[id]
+    return Q.when() unless queue
+    queue.waitForAll()
+
+  waitForAll: (id) -> Q.all _.map @queues, (queue, id) => @wait(id)
