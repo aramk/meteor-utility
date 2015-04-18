@@ -8,6 +8,7 @@ class DeferredQueueSet extends DeferredQueue
     promise = @index[id]
     unless promise
       promise = super(callback)
+      @index[id] = promise
       promise.fin =>
         delete @index[id]
     promise

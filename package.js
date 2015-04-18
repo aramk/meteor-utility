@@ -1,7 +1,7 @@
 Package.describe({
   name: 'aramk:utility',
   summary: 'A collection of utility modules',
-  version: '0.8.3',
+  version: '0.8.4',
   git: 'https://github.com/aramk/meteor-utility.git'
 });
 
@@ -78,6 +78,7 @@ Package.onUse(function(api) {
     'src/Collections.coffee',
     'src/Colors.coffee',
     'src/data/DeferredQueue.coffee',
+    'src/data/DeferredQueueSet.coffee',
     'src/data/DeferredQueueMap.coffee',
     'src/Dates.coffee',
     'src/Depends.coffee',
