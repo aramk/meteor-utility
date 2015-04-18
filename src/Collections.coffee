@@ -269,6 +269,10 @@ Collections =
   # @param {Object} modifier - A MongoDB modifier object.
   # @returns {Object} A copy of the given doc with the given modifier updates applied.
   simulateModifierUpdate: (doc, modifier) ->
+    # TODO(aramk) If non-modifier properties are passed, this can result in them being merged at
+    # times, though it should be throwing an error in mongo.
+    if Object.keys(modifier).length > 1 && !modifier.$set? && !modifier.$unset?
+      throw new Error('Unexpected keys in modifier.')
     tmpCollection = @createTemporary()
     doc = Setter.clone(doc)
     # This is synchronous since it's a local collection.

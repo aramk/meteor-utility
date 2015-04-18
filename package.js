@@ -25,7 +25,8 @@ Package.onUse(function(api) {
   api.use([
     'aldeed:autoform@4.0.7',
     'momentjs:moment@2.9.0',
-    'matb33:collection-hooks@0.7.6'
+    'matb33:collection-hooks@0.7.6',
+    'semantic:ui-css@1.11.5'
   ], 'client', {weak: true});
   // Either of these will contain the Async module, but we don't want to strongly require either
   // since we don't know which is being used.
