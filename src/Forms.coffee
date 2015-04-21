@@ -80,8 +80,8 @@ Forms =
         else
           Form.getSchema()
       formName: -> name
-    # Without this a separate copy is passed across, which doesn't allow sharing data between
-    # create method and form hooks.
+      # Without this a separate copy is passed across, which doesn't allow sharing data between
+      # create method and form hooks.
       doc: -> Form.getValues()
       formTitle: -> Form.getFormTitle()
       formType: ->
@@ -156,6 +156,7 @@ Forms =
         @$('.ui.form.segment').append($('<div class="footer"><div class="required"></div>Required field</div>'))
 
       addPopups = ->
+        return unless supportsPopups()
         $(popupInputs).each ->
           $popupInput = $(@)
           # Manual control over popup to prevent losing focus when closing it in Semantic-UI 1.0.
@@ -177,7 +178,10 @@ Forms =
             $popupInput.focus() if isFocused
 
       removePopups = ->
+        return unless supportsPopups()
         $(popupInputs).popup('destroy')
+
+      supportsPopups = -> $.fn.popup?
 
       @autorun (c) ->
         helpMode = Session.get 'helpMode'
