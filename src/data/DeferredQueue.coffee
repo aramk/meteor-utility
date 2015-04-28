@@ -19,7 +19,7 @@ class DeferredQueue
     fin = => @queue.shift()
     execute = ->
       result = callback()
-      Q.when(result).then(df.resolve, df.reject)
+      Q.when(result).then(df.resolve, df.reject).progress(df.notify)
     execute = Meteor.bindEnvironment(execute)
     if len > 0
       @wait(len - 1).then(execute, df.reject).fin(fin)
