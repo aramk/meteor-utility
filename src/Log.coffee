@@ -101,7 +101,6 @@ if typeof console == 'undefined'
     # Ignorance is bliss
     console[funcName] = ->
 
-if typeof Meteor != 'undefined'
+if Meteor?
   # Log is already defined in the logging pacakge, so we define a different global variable for now.
   Logger = Log
-

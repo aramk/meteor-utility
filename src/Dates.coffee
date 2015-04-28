@@ -102,10 +102,10 @@ Dates =
   #     determining the offset of the original date.
   # @returns {Moment} The given date in the given UTC offset.
   getByOffset: (date, utcOffset) ->
-    if !Types.isString(date) && !utcOffset
+    if !Types.isString(date) && !utcOffset?
       throw new Error('Date must be string to prevent automatic conversion to local timezone, ' +
           'or UTM offset must be provided.')
-    if utcOffset
+    if utcOffset?
       moment.parseZone(moment(date).format()).utcOffset(utcOffset)
     else
       moment.parseZone(date)

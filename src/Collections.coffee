@@ -24,7 +24,7 @@ Collections =
     Strings.toTitleCase(@getName(arg))
 
   # @param {String|Meteor.Collection|Cursor} arg
-  # @returns The underlying collection or null if none is found.
+  # @returns {Meteor.Collection|null} The underlying collection or null if none is found.
   get: (arg) ->
     if Types.isString(arg)
       # Collection name.
@@ -279,6 +279,21 @@ Collections =
     insertedId = tmpCollection.insert(doc)
     tmpCollection.update(insertedId, modifier)
     tmpCollection.findOne(insertedId)
+
+  # @param {String|Meteor.Collection|Cursor} arg
+  # @param {Object} selector
+  # @param {Object} modifier
+  # @param {Function} [callback]
+  upsert: (arg, selector, modifier, callback) ->
+    collection = @get(arg)
+    unless collection
+      throw new Error('No collection provided')
+    doc = collection.findOne(selector)
+    if doc
+      collection.update(doc._id, modifier, callback)
+    else
+      doc = @simulateModifierUpdate({}, modifier)
+      collection.insert(doc, callback)
 
 ####################################################################################################
 # VALIDATION
