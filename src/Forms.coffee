@@ -46,25 +46,6 @@ Forms =
         onError?.apply(@, args)
         throw new Error(error)
 
-      before:
-        insert: (doc, template) ->
-          console.debug('before insert', doc)
-          doc
-        update: (docId, modifier, template) ->
-          console.debug('before update', docId, modifier)
-          # Remove the items in $unset which don't exist as fields in the form.
-          $unset = modifier.$unset
-          if Object.keys($unset).length >= 0
-            schemaInputs = Form.getSchemaInputs(template)
-            fieldIds = []
-            _.each schemaInputs, (input, key) ->
-              fieldIds.push(key) if $(input).length > 0
-            remFieldIds = _.difference(Object.keys($unset), fieldIds)
-            _.each remFieldIds, (fieldId) ->
-              delete $unset[fieldId]
-          console.log('modifier', modifier)
-          modifier
-
     if formArgs.hooks?
       AutoForm.addHooks name, formArgs.hooks
 
