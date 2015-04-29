@@ -78,6 +78,7 @@ Forms =
       submitText: -> if Form.getDocs().length > 0 then 'Save' else 'Create'
       hasDoc: -> Form.hasDoc()
       isBulk: -> Form.isBulk()
+      autosave: -> formArgs.autosave
 
     ################################################################################################
     # EVENTS
