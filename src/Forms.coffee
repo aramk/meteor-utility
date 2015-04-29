@@ -46,6 +46,10 @@ Forms =
         onError?.apply(@, args)
         throw new Error(error)
 
+      beginSubmit: (formId, template) -> Form.setSubmitButtonDisabled(true, template)
+
+      endSubmit: (formId, template) -> Form.setSubmitButtonDisabled(false, template)
+
     if formArgs.hooks?
       AutoForm.addHooks name, formArgs.hooks
 
@@ -105,7 +109,7 @@ Forms =
       $form = Forms.getFormElement(@)
       if $buttons.length > 0 && $crudForm.length > 0
         $crudForm.append($buttons)
-      @$('[type="submit"]', $buttons).click => $form.submit()
+      Form.getSubmitButton(@).click => $form.submit()
 
       schemaInputs = Form.getSchemaInputs()
 
@@ -230,6 +234,13 @@ Forms =
         Form.getBulkValues(template)
       else
         Form.getDocs(template)[0] ? null
+
+    Form.setSubmitButtonDisabled = (disabled, template) ->
+      Form.getSubmitButton(template).toggleClass('disabled', !!disabled)
+
+    Form.getSubmitButton = (template) ->
+      $buttons = template.$('.crud.buttons')
+      template.$('[type="submit"]', $buttons)
 
     ################################################################################################
     # BULK EDITING
