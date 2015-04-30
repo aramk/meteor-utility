@@ -104,6 +104,7 @@ Forms =
       @settings = @data.settings ? {}
       @docs = Form.parseDocs()
       @data.doc = Form.getValues()
+      @origDoc = Setter.clone(@data.doc)
       @isSubmitting = false
       formArgs.onCreate?.apply(@, arguments)
 
@@ -216,10 +217,10 @@ Forms =
         $input = Forms.getFieldElement(key, $form)
         Forms.setInputValue($input, value)
 
-    Form.getBulkValues = (template) ->
+    Form.getBulkValues = (template, docs) ->
       values = {}
       template = getTemplate(template)
-      docs = Form.getDocs(template)
+      docs ?= Form.getDocs(template)
       otherDocs = docs.slice(1)
       getValue = (doc, key) -> Objects.getModifierProperty(doc, key)
       # Populate all form fields with any common values across docs if possible.
@@ -327,12 +328,12 @@ Forms =
         Collections.observe collection,
           changed: (doc) ->
             return unless docHasChanged(doc)
-            result = confirm('Warning: The ' + singularName + ' being edited by this form has been
+            result = confirm('The ' + singularName + ' being edited by this form has been
                 modified. Do you want to merge changes?')
-            console.log('result', result)
+            if result then Form.mergeLatestDoc(template)
           deleted: (doc) ->
             return unless docHasChanged(doc)
-            alert('Warning: The ' + singularName + ' being edited by this form has been removed.')
+            alert('The ' + singularName + ' being edited by this form has been removed.')
             # TODO(aramk) Change the form to insert.
 
     ################################################################################################
@@ -385,6 +386,57 @@ Forms =
       else
         Form.getDocs(template)[0] ? null
 
+    # @returns {Object} The diff between the original document and the resulting document from
+    #     the current state of the form.
+    Form.getDocChanges = (template) ->
+      template = getTemplate(template)
+      formDoc = Form.getInputValues(template)
+      origDoc = template.origDoc ? {}
+      origDoc = Objects.flattenProperties(Setter.clone(origDoc))
+      delete origDoc._id
+      keys = _.union _.keys(formDoc), _.keys(origDoc)
+      changes = {}
+      _.each keys, (key) ->
+        formValue = formDoc[key]
+        if formValue != origDoc[key] then changes[key] = formValue
+      changes
+
+    # Merges the latest document into the form, giving precedence to the changed values in the form.
+    # @returns {Object} The flattened properties of the latest document which were merged into the
+    #     form.
+    Form.mergeLatestDoc = (template) ->
+      template = getTemplate(template)
+      return unless Form.hasDoc(template)
+      docs = Form.getDocs(template)
+      changedValues = Form.getDocChanges(template)
+      collection = Form.getCollection()
+      latestDocs = []
+      _.each docs, (doc) ->
+        doc = collection.findOne(doc._id)
+        if doc? then latestDocs.push(doc)
+      latestValues = if docs.length > 0 then Form.getBulkValues(template, latestDocs) else docs[0]
+      latestValues ?= {}
+      latestValues = Objects.flattenProperties(latestValues)
+      $form = Forms.getFormElement(template)
+      mergedValues = {}
+      _.each latestValues, (value, key) ->
+        unless changedValues[key]?
+          $input = Forms.getFieldElement(key, $form)
+          if Forms.setInputValue($input, value)
+            mergedValues[key] = value
+      mergedValues
+
+    Form.getInputValues = (template) ->
+      template = getTemplate(template)
+      $inputs = Forms.getFieldElements(Forms.getFormElement(template))
+      values = {}
+      $inputs.each ->
+        $input = $(@)
+        id = Forms.getInputId($input)
+        value = Forms.getInputValue($input)
+        values[id] = value
+      values
+
     Form.setSubmitButtonDisabled = (disabled, template) ->
       Form.getSubmitButton(template).toggleClass('disabled', !!disabled)
 
@@ -417,25 +469,40 @@ Forms =
         $label = $parent.prev('label')
     $label
 
+  # @param {jQuery} $input
+  # @param {*} value
+  # @returns {Boolean} Whether the given value was successfully applied to the given input element.
+  #     This is false if the value is unchanged.
   setInputValue: ($input, value) ->
+    changed = @getInputValue($input)
+    return false if value == changed
     if @isSelectInput($input)
       @setSelectValue($input, value)
-    else if $input.is('[type="checkbox"]')
+    else if @isCheckbox($input)
       $input.prop('checked', value)
     else
       $input.val(value)
+    return true
 
   getInputValue: ($input) ->
     if @isSelectInput($input)
       @getSelectValue($input)
+    else if @isCheckbox($input)
+      $input.prop('checked')
     else
       $input.val()
 
-  getFieldElement: (name, formElement) -> $('[data-schema-key="' + name + '"]', formElement)
+  getInputId: ($input) -> $input.attr('data-schema-key')
+
+  getFieldElement: (name, formElement) -> $('[data-schema-key="' + name + '"]:first', formElement)
+
+  getFieldElements: (formElement) -> $('[data-schema-key]', formElement)
 
   getFormElement: (template) -> template.$('form:first')
 
   isSelectInput: ($input) -> $input.is('select') || @isDropdown($input)
+
+  isCheckbox: ($input) -> $input.is('[type="checkbox"]')
 
   getSelectOption: ($input, value) ->
     if @isDropdown($input)
