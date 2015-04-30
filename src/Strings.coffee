@@ -1,6 +1,6 @@
 Strings =
 
-# @returns {String} The string converted to title case.
+  # @returns {String} The string converted to title case.
   toTitleCase: (str) ->
     parts = str.split(/\s+/)
     title = ''
@@ -24,7 +24,7 @@ Strings =
 # TODO(aramk) Improve naive pluralize methods.
 
   singular: (plural) ->
-    plural.replace /s$/, ''
+    plural.replace /(s|ies)$/, ''
 
   plural: (singular) ->
     singular + 's'
