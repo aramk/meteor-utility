@@ -206,7 +206,7 @@ Forms =
     Form.getFormTitle = ->
       collectionName = Collections.getTitle(formArgs.collection)
       docs = Form.getDocs()
-      suffix = Strings.pluralize(Strings.singular(collectionName), docs, collectionName)
+      suffix = Strings.pluralize(Strings.singular(collectionName), docs.length, collectionName)
       if Form.isBulk()
         suffix = docs.length + ' ' + suffix
       (if docs.length > 0 then 'Edit' else 'Create') + ' ' + suffix
