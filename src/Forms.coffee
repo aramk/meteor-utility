@@ -46,9 +46,13 @@ Forms =
         onError?.apply(@, args)
         throw new Error(error)
 
-      beginSubmit: (formId, template) -> Form.setSubmitButtonDisabled(true, template)
+      beginSubmit: (formId, template) ->
+        getTemplate(template).isSubmitting = true
+        Form.setSubmitButtonDisabled(true, template)
 
-      endSubmit: (formId, template) -> Form.setSubmitButtonDisabled(false, template)
+      endSubmit: (formId, template) ->
+        getTemplate(template).isSubmitting = false
+        Form.setSubmitButtonDisabled(false, template)
 
     if formArgs.hooks?
       AutoForm.addHooks name, formArgs.hooks
@@ -100,6 +104,7 @@ Forms =
       @settings = @data.settings ? {}
       @docs = Form.parseDocs()
       @data.doc = Form.getValues()
+      @isSubmitting = false
       formArgs.onCreate?.apply(@, arguments)
 
     Form.rendered = ->
@@ -175,6 +180,9 @@ Forms =
 
       # if Form.isBulk()
       #   Form.setUpBulkFields()
+
+      if Form.isReactive()
+        Form.setUpReactivity()
       
       formArgs.onRender?.apply(@, arguments)
 
@@ -272,18 +280,18 @@ Forms =
         field.optional = true
       new SimpleSchema(schemaArgs)
 
-    Form.setUpBulkFields = (template) ->
-      template = getTemplate(template)
-      values = Form.getBulkValues()
-      schemaInputs = Form.getSchemaInputs(template)
-      _.each schemaInputs, (input, key) ->
-        $input = $(input.node)
-        value = Objects.getModifierProperty(values, key)
-        if Setter.isDefined(value)
-          placeholder = ''
-        else
+    # Form.setUpBulkFields = (template) ->
+    #   template = getTemplate(template)
+    #   values = Form.getBulkValues()
+    #   schemaInputs = Form.getSchemaInputs(template)
+    #   _.each schemaInputs, (input, key) ->
+    #     $input = $(input.node)
+    #     value = Objects.getModifierProperty(values, key)
+    #     if Setter.isDefined(value)
+    #       placeholder = ''
+    #     else
 
-        $input.attr('placeholder', placeholder)
+    #     $input.attr('placeholder', placeholder)
 
     Form.getSampleValues = (paramId, template) ->
       template = getTemplate(template)
@@ -296,6 +304,36 @@ Forms =
           values.push(value)
           count++
         return count >= 3
+
+    ################################################################################################
+    # REACTIVE UPDATES
+    ################################################################################################
+
+    Form.isReactive = -> !!formArgs.reactive
+
+    Form.setUpReactivity = (template) ->
+      template = getTemplate(template)
+      docs = Form.getDocs()
+      # If no docs exist, no reactive updates can occur on them.
+      return unless docs.length > 0
+      docIdMap = {}
+      _.each docs, (doc) -> docIdMap[doc._id] = true
+      collection = Form.getCollection()
+      singularName = Form.getSingularName()
+      # Check if the doc has changed and ensure the current form is not submitting to prevent
+      # self-detection.
+      docHasChanged = (doc) -> docIdMap[doc._id]? && !template.isSubmitting
+      template.autorun ->
+        Collections.observe collection,
+          changed: (doc) ->
+            return unless docHasChanged(doc)
+            result = confirm('Warning: The ' + singularName + ' being edited by this form has been
+                modified. Do you want to merge changes?')
+            console.log('result', result)
+          deleted: (doc) ->
+            return unless docHasChanged(doc)
+            alert('Warning: The ' + singularName + ' being edited by this form has been removed.')
+            # TODO(aramk) Change the form to insert.
 
     ################################################################################################
     # AUXILIARY
@@ -356,8 +394,9 @@ Forms =
 
     Form.getSingularName = ->
       collectionName = Collections.getTitle(Form.getCollection())
-      formArgs.singularName ? Strings.singular(collectionName)
+      (formArgs.singularName ? Strings.singular(collectionName)).toLowerCase()
 
+    # Return the Form to be used as a Template.
     return Form
 
   ##################################################################################################
