@@ -185,67 +185,6 @@ Forms =
       formArgs.onDestroy?.apply(@, arguments)
 
     ################################################################################################
-    # AUXILIARY
-    ################################################################################################
-
-    Form.parseDocs = (template) ->
-      template = getTemplate(template)
-      data = template.data
-      if data.docs?
-        docs = data.docs
-      else if data.doc?
-        docs = [data.doc]
-      else
-        docs = []
-      _.map docs, (doc) ->
-        if Types.isString(doc)
-          Form.getCollection().findOne(doc)
-        else
-          doc
-
-    Form.getFormTitle = ->
-      collectionName = Collections.getTitle(formArgs.collection)
-      singularName = formArgs.singularName ? Strings.singular(collectionName)
-      docs = Form.getDocs()
-      suffix = Strings.pluralize(singularName, docs.length, collectionName)
-      suffix = Strings.toTitleCase(suffix)
-      if Form.isBulk()
-        suffix = docs.length + ' ' + suffix
-      (if docs.length > 0 then 'Edit' else 'Create') + ' ' + suffix
-
-    Form.getCollection = -> Collections.get(formArgs.collection)
-
-    Form.getSchema = -> Collections.getSchema(formArgs.schema ? Form.getCollection())
-
-    ################################################################################################
-    # AUXILIARY
-    ################################################################################################
-
-    getTemplate = Form.getTemplate = (template) -> Templates.getNamedInstance(name, template)
-
-    Form.getElement = (template) -> Forms.getFormElement(getTemplate(template))
-
-    Form.getFieldElement = (name, template) ->
-      Forms.getFieldElement(name, Form.getElement(), template)
-
-    Form.getSchemaInputs = (template) ->
-      template = getTemplate(template)
-      Forms.getSchemaInputs(template, formArgs.schema ? formArgs.collection)
-
-    Form.getValues = (template) ->
-      if Form.isBulk(template)
-        Form.getBulkValues(template)
-      else
-        Form.getDocs(template)[0] ? null
-
-    Form.setSubmitButtonDisabled = (disabled, template) ->
-      Form.getSubmitButton(template).toggleClass('disabled', !!disabled)
-
-    Form.getSubmitButton = (template) ->
-      $buttons = template.$('.crud.buttons')
-      template.$('[type="submit"]', $buttons)
-
-    ################################################################################################
     # BULK EDITING
     ################################################################################################
 
@@ -357,6 +296,67 @@ Forms =
           values.push(value)
           count++
         return count >= 3
+
+    ################################################################################################
+    # AUXILIARY
+    ################################################################################################
+
+    Form.parseDocs = (template) ->
+      template = getTemplate(template)
+      data = template.data
+      if data.docs?
+        docs = data.docs
+      else if data.doc?
+        docs = [data.doc]
+      else
+        docs = []
+      _.map docs, (doc) ->
+        if Types.isString(doc)
+          Form.getCollection().findOne(doc)
+        else
+          doc
+
+    Form.getFormTitle = ->
+      collectionName = Collections.getTitle(Form.getCollection())
+      singularName = Form.getSingularName()
+      docs = Form.getDocs()
+      suffix = Strings.pluralize(singularName, docs.length, collectionName)
+      suffix = Strings.toTitleCase(suffix)
+      if Form.isBulk()
+        suffix = docs.length + ' ' + suffix
+      (if docs.length > 0 then 'Edit' else 'Create') + ' ' + suffix
+
+    Form.getCollection = -> Collections.get(formArgs.collection)
+
+    Form.getSchema = -> Collections.getSchema(formArgs.schema ? Form.getCollection())
+
+    getTemplate = Form.getTemplate = (template) -> Templates.getNamedInstance(name, template)
+
+    Form.getElement = (template) -> Forms.getFormElement(getTemplate(template))
+
+    Form.getFieldElement = (name, template) ->
+      Forms.getFieldElement(name, Form.getElement(), template)
+
+    Form.getSchemaInputs = (template) ->
+      template = getTemplate(template)
+      Forms.getSchemaInputs(template, formArgs.schema ? Form.getCollection())
+
+    Form.getValues = (template) ->
+      if Form.isBulk(template)
+        Form.getBulkValues(template)
+      else
+        Form.getDocs(template)[0] ? null
+
+    Form.setSubmitButtonDisabled = (disabled, template) ->
+      Form.getSubmitButton(template).toggleClass('disabled', !!disabled)
+
+    Form.getSubmitButton = (template) ->
+      $buttons = template.$('.crud.buttons')
+      template.$('[type="submit"]', $buttons)
+
+    Form.getSingularName = ->
+      collectionName = Collections.getTitle(Form.getCollection())
+      formArgs.singularName ? Strings.singular(collectionName)
 
     return Form
 
