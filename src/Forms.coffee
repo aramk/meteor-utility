@@ -46,9 +46,13 @@ Forms =
         onError?.apply(@, args)
         throw new Error(error)
 
-      beginSubmit: (formId, template) -> Form.setSubmitButtonDisabled(true, template)
+      beginSubmit: (formId, template) ->
+        getTemplate(template).isSubmitting = true
+        Form.setSubmitButtonDisabled(true, template)
 
-      endSubmit: (formId, template) -> Form.setSubmitButtonDisabled(false, template)
+      endSubmit: (formId, template) ->
+        getTemplate(template).isSubmitting = false
+        Form.setSubmitButtonDisabled(false, template)
 
     if formArgs.hooks?
       AutoForm.addHooks name, formArgs.hooks
@@ -100,6 +104,8 @@ Forms =
       @settings = @data.settings ? {}
       @docs = Form.parseDocs()
       @data.doc = Form.getValues()
+      @origDoc = Setter.clone(@data.doc)
+      @isSubmitting = false
       formArgs.onCreate?.apply(@, arguments)
 
     Form.rendered = ->
@@ -175,6 +181,9 @@ Forms =
 
       # if Form.isBulk()
       #   Form.setUpBulkFields()
+
+      if Form.isReactive()
+        Form.setUpReactivity()
       
       formArgs.onRender?.apply(@, arguments)
 
@@ -183,67 +192,6 @@ Forms =
       template = @
       template.isDestroyed = true
       formArgs.onDestroy?.apply(@, arguments)
-
-    ################################################################################################
-    # AUXILIARY
-    ################################################################################################
-
-    Form.parseDocs = (template) ->
-      template = getTemplate(template)
-      data = template.data
-      if data.docs?
-        docs = data.docs
-      else if data.doc?
-        docs = [data.doc]
-      else
-        docs = []
-      _.map docs, (doc) ->
-        if Types.isString(doc)
-          Form.getCollection().findOne(doc)
-        else
-          doc
-
-    Form.getFormTitle = ->
-      collectionName = Collections.getTitle(formArgs.collection)
-      singularName = formArgs.singularName ? Strings.singular(collectionName)
-      docs = Form.getDocs()
-      suffix = Strings.pluralize(singularName, docs.length, collectionName)
-      suffix = Strings.toTitleCase(suffix)
-      if Form.isBulk()
-        suffix = docs.length + ' ' + suffix
-      (if docs.length > 0 then 'Edit' else 'Create') + ' ' + suffix
-
-    Form.getCollection = -> Collections.get(formArgs.collection)
-
-    Form.getSchema = -> Collections.getSchema(formArgs.schema ? Form.getCollection())
-
-    ################################################################################################
-    # AUXILIARY
-    ################################################################################################
-
-    getTemplate = Form.getTemplate = (template) -> Templates.getNamedInstance(name, template)
-
-    Form.getElement = (template) -> Forms.getFormElement(getTemplate(template))
-
-    Form.getFieldElement = (name, template) ->
-      Forms.getFieldElement(name, Form.getElement(), template)
-
-    Form.getSchemaInputs = (template) ->
-      template = getTemplate(template)
-      Forms.getSchemaInputs(template, formArgs.schema ? formArgs.collection)
-
-    Form.getValues = (template) ->
-      if Form.isBulk(template)
-        Form.getBulkValues(template)
-      else
-        Form.getDocs(template)[0] ? null
-
-    Form.setSubmitButtonDisabled = (disabled, template) ->
-      Form.getSubmitButton(template).toggleClass('disabled', !!disabled)
-
-    Form.getSubmitButton = (template) ->
-      $buttons = template.$('.crud.buttons')
-      template.$('[type="submit"]', $buttons)
 
     ################################################################################################
     # BULK EDITING
@@ -269,10 +217,10 @@ Forms =
         $input = Forms.getFieldElement(key, $form)
         Forms.setInputValue($input, value)
 
-    Form.getBulkValues = (template) ->
+    Form.getBulkValues = (template, docs) ->
       values = {}
       template = getTemplate(template)
-      docs = Form.getDocs(template)
+      docs ?= Form.getDocs(template)
       otherDocs = docs.slice(1)
       getValue = (doc, key) -> Objects.getModifierProperty(doc, key)
       # Populate all form fields with any common values across docs if possible.
@@ -333,18 +281,18 @@ Forms =
         field.optional = true
       new SimpleSchema(schemaArgs)
 
-    Form.setUpBulkFields = (template) ->
-      template = getTemplate(template)
-      values = Form.getBulkValues()
-      schemaInputs = Form.getSchemaInputs(template)
-      _.each schemaInputs, (input, key) ->
-        $input = $(input.node)
-        value = Objects.getModifierProperty(values, key)
-        if Setter.isDefined(value)
-          placeholder = ''
-        else
+    # Form.setUpBulkFields = (template) ->
+    #   template = getTemplate(template)
+    #   values = Form.getBulkValues()
+    #   schemaInputs = Form.getSchemaInputs(template)
+    #   _.each schemaInputs, (input, key) ->
+    #     $input = $(input.node)
+    #     value = Objects.getModifierProperty(values, key)
+    #     if Setter.isDefined(value)
+    #       placeholder = ''
+    #     else
 
-        $input.attr('placeholder', placeholder)
+    #     $input.attr('placeholder', placeholder)
 
     Form.getSampleValues = (paramId, template) ->
       template = getTemplate(template)
@@ -358,6 +306,149 @@ Forms =
           count++
         return count >= 3
 
+    ################################################################################################
+    # REACTIVE UPDATES
+    ################################################################################################
+
+    Form.isReactive = -> !!formArgs.reactive
+
+    Form.setUpReactivity = (template) ->
+      template = getTemplate(template)
+      docs = Form.getDocs()
+      # If no docs exist, no reactive updates can occur on them.
+      return unless docs.length > 0
+      docIdMap = {}
+      _.each docs, (doc) -> docIdMap[doc._id] = true
+      collection = Form.getCollection()
+      singularName = Form.getSingularName()
+      # Check if the doc has changed and ensure the current form is not submitting to prevent
+      # self-detection.
+      docHasChanged = (doc) -> docIdMap[doc._id]? && !template.isSubmitting
+      template.autorun ->
+        Collections.observe collection,
+          changed: (doc) ->
+            return unless docHasChanged(doc)
+            result = confirm('The ' + singularName + ' being edited by this form has been
+                modified. Do you want to merge changes?')
+            if result then Form.mergeLatestDoc(template)
+          deleted: (doc) ->
+            return unless docHasChanged(doc)
+            alert('The ' + singularName + ' being edited by this form has been removed.')
+            # TODO(aramk) Change the form to insert.
+
+    ################################################################################################
+    # AUXILIARY
+    ################################################################################################
+
+    Form.parseDocs = (template) ->
+      template = getTemplate(template)
+      data = template.data
+      if data.docs?
+        docs = data.docs
+      else if data.doc?
+        docs = [data.doc]
+      else
+        docs = []
+      _.map docs, (doc) ->
+        if Types.isString(doc)
+          Form.getCollection().findOne(doc)
+        else
+          doc
+
+    Form.getFormTitle = ->
+      collectionName = Collections.getTitle(Form.getCollection())
+      singularName = Form.getSingularName()
+      docs = Form.getDocs()
+      suffix = Strings.pluralize(singularName, docs.length, collectionName)
+      suffix = Strings.toTitleCase(suffix)
+      if Form.isBulk()
+        suffix = docs.length + ' ' + suffix
+      (if docs.length > 0 then 'Edit' else 'Create') + ' ' + suffix
+
+    Form.getCollection = -> Collections.get(formArgs.collection)
+
+    Form.getSchema = -> Collections.getSchema(formArgs.schema ? Form.getCollection())
+
+    getTemplate = Form.getTemplate = (template) -> Templates.getNamedInstance(name, template)
+
+    Form.getElement = (template) -> Forms.getFormElement(getTemplate(template))
+
+    Form.getFieldElement = (name, template) ->
+      Forms.getFieldElement(name, Form.getElement(), template)
+
+    Form.getSchemaInputs = (template) ->
+      template = getTemplate(template)
+      Forms.getSchemaInputs(template, formArgs.schema ? Form.getCollection())
+
+    Form.getValues = (template) ->
+      if Form.isBulk(template)
+        Form.getBulkValues(template)
+      else
+        Form.getDocs(template)[0] ? null
+
+    # @returns {Object} The diff between the original document and the resulting document from
+    #     the current state of the form.
+    Form.getDocChanges = (template) ->
+      template = getTemplate(template)
+      formDoc = Form.getInputValues(template)
+      origDoc = template.origDoc ? {}
+      origDoc = Objects.flattenProperties(Setter.clone(origDoc))
+      delete origDoc._id
+      keys = _.union _.keys(formDoc), _.keys(origDoc)
+      changes = {}
+      _.each keys, (key) ->
+        formValue = formDoc[key]
+        if formValue != origDoc[key] then changes[key] = formValue
+      changes
+
+    # Merges the latest document into the form, giving precedence to the changed values in the form.
+    # @returns {Object} The flattened properties of the latest document which were merged into the
+    #     form.
+    Form.mergeLatestDoc = (template) ->
+      template = getTemplate(template)
+      return unless Form.hasDoc(template)
+      docs = Form.getDocs(template)
+      changedValues = Form.getDocChanges(template)
+      collection = Form.getCollection()
+      latestDocs = []
+      _.each docs, (doc) ->
+        doc = collection.findOne(doc._id)
+        if doc? then latestDocs.push(doc)
+      latestValues = if docs.length > 0 then Form.getBulkValues(template, latestDocs) else docs[0]
+      latestValues ?= {}
+      latestValues = Objects.flattenProperties(latestValues)
+      $form = Forms.getFormElement(template)
+      mergedValues = {}
+      _.each latestValues, (value, key) ->
+        unless changedValues[key]?
+          $input = Forms.getFieldElement(key, $form)
+          if Forms.setInputValue($input, value)
+            mergedValues[key] = value
+      mergedValues
+
+    Form.getInputValues = (template) ->
+      template = getTemplate(template)
+      $inputs = Forms.getFieldElements(Forms.getFormElement(template))
+      values = {}
+      $inputs.each ->
+        $input = $(@)
+        id = Forms.getInputId($input)
+        value = Forms.getInputValue($input)
+        values[id] = value
+      values
+
+    Form.setSubmitButtonDisabled = (disabled, template) ->
+      Form.getSubmitButton(template).toggleClass('disabled', !!disabled)
+
+    Form.getSubmitButton = (template) ->
+      $buttons = template.$('.crud.buttons')
+      template.$('[type="submit"]', $buttons)
+
+    Form.getSingularName = ->
+      collectionName = Collections.getTitle(Form.getCollection())
+      (formArgs.singularName ? Strings.singular(collectionName)).toLowerCase()
+
+    # Return the Form to be used as a Template.
     return Form
 
   ##################################################################################################
@@ -378,25 +469,40 @@ Forms =
         $label = $parent.prev('label')
     $label
 
+  # @param {jQuery} $input
+  # @param {*} value
+  # @returns {Boolean} Whether the given value was successfully applied to the given input element.
+  #     This is false if the value is unchanged.
   setInputValue: ($input, value) ->
+    changed = @getInputValue($input)
+    return false if value == changed
     if @isSelectInput($input)
       @setSelectValue($input, value)
-    else if $input.is('[type="checkbox"]')
+    else if @isCheckbox($input)
       $input.prop('checked', value)
     else
       $input.val(value)
+    return true
 
   getInputValue: ($input) ->
     if @isSelectInput($input)
       @getSelectValue($input)
+    else if @isCheckbox($input)
+      $input.prop('checked')
     else
       $input.val()
 
-  getFieldElement: (name, formElement) -> $('[data-schema-key="' + name + '"]', formElement)
+  getInputId: ($input) -> $input.attr('data-schema-key')
+
+  getFieldElement: (name, formElement) -> $('[data-schema-key="' + name + '"]:first', formElement)
+
+  getFieldElements: (formElement) -> $('[data-schema-key]', formElement)
 
   getFormElement: (template) -> template.$('form:first')
 
   isSelectInput: ($input) -> $input.is('select') || @isDropdown($input)
+
+  isCheckbox: ($input) -> $input.is('[type="checkbox"]')
 
   getSelectOption: ($input, value) ->
     if @isDropdown($input)
