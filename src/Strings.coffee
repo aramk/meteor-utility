@@ -11,6 +11,14 @@ Strings =
           title += ' '
     title
 
+  toTitleCaseFromCamel: (str) ->
+    re = /([A-Z]+(?![a-z]))|([A-Z][a-z]+)/g
+    match = null
+    title = []
+    while (match = re.exec(str)) != null
+      title.push(@toTitleCase(match[0]))
+    title.join(' ')
+
   toSpaceSeparated: (str) -> str.replace(/[_-]+/g, ' ')
 
   firstToLowerCase: (str) ->
