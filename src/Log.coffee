@@ -19,7 +19,8 @@ Log =
 
   _loggingOn: true
 
-  _shouldLog: (level) ->
+  shouldLog: (level, currentLevel) ->
+    currentLevel ?= @level
     # Only logs if the level is less than or equal to the current level
     code = @_levels[level]
     return typeof code != 'undefined' && code <= @_levels[@level]
@@ -34,13 +35,13 @@ Log =
     @_loggingOn = false
     _.each Object.keys(FunctionReferences), (f) => @[f] = ->
 
-  debug: -> @_shouldLog('debug') && Log.msg('DEBUG', arguments, console.debug)
+  debug: -> @shouldLog('debug') && Log.msg('DEBUG', arguments, console.debug)
 
-  info: -> @_shouldLog('info') && Log.msg('INFO', arguments)
+  info: -> @shouldLog('info') && Log.msg('INFO', arguments)
 
-  warn: -> @_shouldLog('warn') && Log.msg('WARNING', arguments, console.warn)
+  warn: -> @shouldLog('warn') && Log.msg('WARNING', arguments, console.warn)
 
-  error: -> @_shouldLog('error') && Log.msg('ERROR', arguments, console.error)
+  error: -> @shouldLog('error') && Log.msg('ERROR', arguments, console.error)
 
   msg: (msg, args, func) ->
     return if @level == 'off'
@@ -64,16 +65,16 @@ Log =
       @_timers[name] =
         date: Date.now()
         level: level
-    else if @_shouldLog('time')
+    else if @shouldLog('time')
       console.time(name)
 
   timeEnd: (name) ->
     timer = @_timers[name]
     if timer
-      if @_shouldLog(timer.level)
+      if @shouldLog(timer.level)
         Log[timer.level](name + ': ' + (Date.now() - timer.date) + 'ms')
       delete @_timers[name]
-    else if @_shouldLog('time')
+    else if @shouldLog('time')
       console.timeEnd(name)
 
 # Allows setting the logging level via GET variable

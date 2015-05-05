@@ -34,15 +34,15 @@ Strings =
     plural ?= @plural(singular)
     if count == 1 then singular else plural
 
-# @param {String} name
-# @param {Object} args
-# @param {Function} args.validator - A function which should return whether the generated name
-# is satisfactory or should continue to be generated.
-# @param {Function} [args.transformer] - Transforms the name. Passed the prefix and the
-# index of the current try. Must return unique output for each try to avoid infinite looping.
-# @param {Number} [args.limit=100] - The number of times to try suffixing before giving up.
-# @returns {String} A name using the prefix and a suffix if necessary to distinguish the name
-# from those existing.
+  # @param {String} name
+  # @param {Object} args
+  # @param {Function} args.validator - A function which should return whether the generated name
+  #     is satisfactory or should continue to be generated.
+  # @param {Function} [args.transformer] - Transforms the name. Passed the prefix and the
+  #     index of the current try. Must return unique output for each try to avoid infinite looping.
+  # @param {Number} [args.limit=100] - The number of times to try suffixing before giving up.
+  # @returns {String} A name using the prefix and a suffix if necessary to distinguish the name
+  #     from those existing.
   generateName: (name, args) ->
     defaultTransformer = (origName, currName, i) ->
       origName + ' ' + (i + 1)
