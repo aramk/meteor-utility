@@ -376,7 +376,7 @@ Forms =
     Form.getElement = (template) -> Forms.getFormElement(getTemplate(template))
 
     Form.getFieldElement = (name, template) ->
-      Forms.getFieldElement(name, Form.getElement(), template)
+      Forms.getFieldElement(name, Form.getElement(template), template)
 
     Form.getSchemaInputs = (template) ->
       template = getTemplate(template)
