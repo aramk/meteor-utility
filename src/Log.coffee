@@ -23,7 +23,7 @@ Log =
     currentLevel ?= @level
     # Only logs if the level is less than or equal to the current level
     code = @_levels[level]
-    return typeof code != 'undefined' && code <= @_levels[@level]
+    return typeof code != 'undefined' && code <= @_levels[currentLevel]
 
   on: ->
     return if @_loggingOn
