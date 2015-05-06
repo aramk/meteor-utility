@@ -473,11 +473,11 @@ Forms =
   getRequiredLabels: ($em) -> $('.required', $em)
 
   getInputLabel: ($input) ->
-    $label = $input.prev('label')
+    $label = $input.siblings('label')
     if $label.length == 0
       $parent = $input.parent()
       if $parent.is('.dropdown')
-        $label = $parent.prev('label')
+        $label = @getInputLabel($parent)
     $label
 
   # @param {jQuery} $input
