@@ -186,9 +186,7 @@ Forms =
         Form.setUpReactivity()
 
       if @data.docPromise?
-        Q.when(@data.docPromise).then =>
-          console.log('docPromise')
-          Form.mergeLatestDoc(@)
+        Q.when(@data.docPromise).then => Form.mergeLatestDoc(@)
       
       formArgs.onRender?.apply(@, arguments)
 
