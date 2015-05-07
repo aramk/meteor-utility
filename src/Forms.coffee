@@ -184,6 +184,9 @@ Forms =
 
       if Form.isReactive()
         Form.setUpReactivity()
+
+      if @data.docPromise?
+        Q.when(@data.docPromise).then => Form.mergeLatestDoc(@)
       
       formArgs.onRender?.apply(@, arguments)
 
@@ -323,14 +326,16 @@ Forms =
       singularName = Form.getSingularName()
       # Check if the doc has changed and ensure the current form is not submitting to prevent
       # self-detection.
-      docHasChanged = (doc) -> docIdMap[doc._id]? && !template.isSubmitting
+      docHasChanged = (doc) -> docIdMap[doc._id]?# && !template.isSubmitting
       template.autorun ->
         Collections.observe collection,
           changed: (doc) ->
             return unless docHasChanged(doc)
-            result = confirm('The ' + singularName + ' being edited by this form has been
-                modified. Do you want to merge changes?')
-            if result then Form.mergeLatestDoc(template)
+            merge = true
+            if formArgs.reactiveAutoMerge == false
+              merge = confirm('The ' + singularName + ' being edited by this form has been
+                  modified. Do you want to merge changes?')
+            if merge then Form.mergeLatestDoc(template)
           deleted: (doc) ->
             return unless docHasChanged(doc)
             alert('The ' + singularName + ' being edited by this form has been removed.')
@@ -374,7 +379,7 @@ Forms =
     Form.getElement = (template) -> Forms.getFormElement(getTemplate(template))
 
     Form.getFieldElement = (name, template) ->
-      Forms.getFieldElement(name, Form.getElement(), template)
+      Forms.getFieldElement(name, Form.getElement(template), template)
 
     Form.getSchemaInputs = (template) ->
       template = getTemplate(template)
@@ -394,11 +399,13 @@ Forms =
       origDoc = template.origDoc ? {}
       origDoc = Objects.flattenProperties(Setter.clone(origDoc))
       delete origDoc._id
-      keys = _.union _.keys(formDoc), _.keys(origDoc)
+      keys = _.intersection _.keys(formDoc), _.keys(origDoc)
       changes = {}
       _.each keys, (key) ->
         formValue = formDoc[key]
-        if formValue != origDoc[key] then changes[key] = formValue
+        origValue = origDoc[key]
+        if formValue? && origValue? && formValue.toString().trim() != origValue.toString().trim()
+          changes[key] = formValue
       changes
 
     # Merges the latest document into the form, giving precedence to the changed values in the form.
@@ -420,8 +427,10 @@ Forms =
       $form = Forms.getFormElement(template)
       mergedValues = {}
       _.each latestValues, (value, key) ->
-        unless changedValues[key]?
+        if !changedValues[key]? || changedValues[key].toString().trim() != value.toString().trim()
           $input = Forms.getFieldElement(key, $form)
+          # Not all values in the document need to be included in the form. Only record those which
+          # are.
           if Forms.setInputValue($input, value)
             mergedValues[key] = value
       mergedValues
@@ -462,11 +471,11 @@ Forms =
   getRequiredLabels: ($em) -> $('.required', $em)
 
   getInputLabel: ($input) ->
-    $label = $input.prev('label')
+    $label = $input.siblings('label')
     if $label.length == 0
       $parent = $input.parent()
       if $parent.is('.dropdown')
-        $label = $parent.prev('label')
+        $label = @getInputLabel($parent)
     $label
 
   # @param {jQuery} $input
