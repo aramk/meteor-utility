@@ -41,7 +41,7 @@ Forms =
         deferCallback(result, callback)
 
       onError: (operation, error, template) ->
-        console.error('Error submitting form', operation, error, template)
+        Logger.error('Error submitting form', operation, error, template)
         onError = formArgs.onError ? formArgs.hooks?.onError
         onError?.apply(@, args)
         throw new Error(error)
