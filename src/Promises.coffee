@@ -25,7 +25,14 @@ Promises =
         )
       catch err
         done(err, null)
-    if response.error
-      throw response.error
+    err = response.error
+    if err
+      if Meteor.isServer
+        if err instanceof Error
+          throw new Meteor.Error(500, err.message, err.stack)
+        else
+          throw new Meteor.Error(500, err)
+      else
+        throw err
     else
       response.result
