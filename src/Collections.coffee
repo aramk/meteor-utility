@@ -21,7 +21,8 @@ Collections =
     if collection then (collection._name || collection.name) else null
 
   getTitle: (arg) ->
-    Strings.toTitleCase(@getName(arg))
+    name = @getName(arg)
+    if name then Strings.toTitleCase(name) else name
 
   # @param {String|Meteor.Collection|Cursor} arg
   # @returns {Meteor.Collection|null} The underlying collection or null if none is found.

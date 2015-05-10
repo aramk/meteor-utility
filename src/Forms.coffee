@@ -116,7 +116,11 @@ Forms =
       $form = Forms.getFormElement(@)
       if $buttons.length > 0 && $crudForm.length > 0
         $crudForm.append($buttons)
-      Form.getSubmitButton(@).click => $form.submit()
+      # If the submit button is outside the form, it won't be captured by AutoForm, so bind an
+      # event manually.
+      $submit = Form.getSubmitButton(@)
+      if $submit.closest('form').length == 0
+        $submit.click => $form.submit()
 
       schemaInputs = Form.getSchemaInputs()
 
@@ -454,8 +458,14 @@ Forms =
       template.$('[type="submit"]', $buttons)
 
     Form.getSingularName = ->
-      collectionName = Collections.getTitle(Form.getCollection())
-      (formArgs.singularName ? Strings.singular(collectionName)).toLowerCase()
+      collectionName = formArgs.collectionName ? Collections.getTitle(Form.getCollection())
+      singular = formArgs.singularName
+      unless singular
+        if collectionName
+          singular = Strings.singular(collectionName)
+        else
+          return null
+      singular.toLowerCase()
 
     # Return the Form to be used as a Template.
     return Form
