@@ -72,3 +72,8 @@ Objects =
       callback(value, key)
       if Types.isObject(value)
         @traverseValues(value, callback)
+
+  inverse: (obj) ->
+    result = {}
+    _.each obj, (value, key) -> if value? then result[value] = key
+    result
