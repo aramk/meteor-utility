@@ -83,6 +83,7 @@ Forms =
       hasDoc: -> Form.hasDoc()
       isBulk: -> Form.isBulk()
       autosave: -> formArgs.autosave
+      resetOnSuccess: -> formArgs.resetOnSuccess
 
     ################################################################################################
     # EVENTS
