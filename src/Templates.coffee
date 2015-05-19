@@ -93,3 +93,9 @@ Templates =
       Session.set(sessionVarName, value)
     reactiveVar
 
+  get: (templateOrName) ->
+    if templateOrName instanceof Blaze.Template
+      templateOrName
+    else
+      Template[templateOrName]
+
