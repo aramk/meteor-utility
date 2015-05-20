@@ -1,7 +1,7 @@
 Package.describe({
   name: 'aramk:utility',
   summary: 'A collection of utility modules',
-  version: '0.8.6',
+  version: '0.8.7',
   git: 'https://github.com/aramk/meteor-utility.git'
 });
 
