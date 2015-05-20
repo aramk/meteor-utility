@@ -18,7 +18,6 @@ Forms =
       onSubmit: (insertDoc, updateDoc, currentDoc) ->
         args = arguments
         template = getTemplate(@template)
-        console.debug 'onSubmit', args, @
         onSubmit = formArgs.onSubmit ? formArgs.hooks?.onSubmit
         result = onSubmit?.apply(@, args)
         callback = => template.settings.onSubmit?.apply(@, args)
@@ -32,12 +31,24 @@ Forms =
       onSuccess: (operation, result) ->
         args = arguments
         template = getTemplate(@template)
-        console.debug 'onSuccess', args, @
-        AutoForm.resetForm(name)
+        Form.updateDocs(template)
+        Form.setUpDocs(template)
         onSuccess = formArgs.onSuccess ? formArgs.hooks?.onSuccess
         result = onSuccess?.apply(@, args)
         callback = => template.settings.onSuccess?.apply(@, args)
         deferCallback(result, callback)
+
+      before:
+        # Remove fields in the modifiers which haven't been changed.
+        update: (modifier) ->
+          $input = $(@autoSaveChangedElement)
+          changes = Form.getDocChanges(@template)
+          _.each ['$set', '$unset'], (propName) ->
+            fields = modifier[propName]
+            if fields?
+              _.each fields, (value, key) ->
+                unless changes[key]? then delete fields[key]
+          modifier
 
       onError: (operation, error) ->
         template = getTemplate(@template)
@@ -73,7 +84,7 @@ Forms =
       formName: -> name
       # Without this a separate copy is passed across, which doesn't allow sharing data between
       # create method and form hooks.
-      doc: -> Form.getValues()
+      doc: -> Tracker.nonreactive -> Form.getValues()
       formTitle: -> Form.getFormTitle()
       formType: ->
         return if Form.isBulk()
@@ -85,7 +96,7 @@ Forms =
       hasDoc: -> Form.hasDoc()
       isBulk: -> Form.isBulk()
       autosave: -> formArgs.autosave
-      resetOnSuccess: -> formArgs.resetOnSuccess
+      resetOnSuccess: -> formArgs.resetOnSuccess ? false
 
     ################################################################################################
     # EVENTS
@@ -94,7 +105,6 @@ Forms =
     Form.events
       'click button.cancel': (e, template) ->
         e.preventDefault()
-        console.debug 'onCancel', arguments, @
         formArgs.onCancel?(template)
         formTemplate = getTemplate(template)
         formTemplate.settings.onCancel?()
@@ -105,14 +115,11 @@ Forms =
 
     Form.created = ->
       @settings = @data.settings ? {}
-      @docs = Form.parseDocs()
-      @data.doc = Form.getValues()
-      @origDoc = Setter.clone(@data.doc)
+      Form.setUpDocs(@)
       @isSubmitting = false
       formArgs.onCreate?.apply(@, arguments)
 
     Form.rendered = ->
-      console.debug 'Rendered form', @, arguments
       # Move the buttons to the same level as the title and content to allow using flex-layout.
       $buttons = @$('.crud.buttons')
       $crudForm = @$('.flex-panel:first')
@@ -189,8 +196,8 @@ Forms =
       # if Form.isBulk()
       #   Form.setUpBulkFields()
 
-      # if Form.isReactive()
-      #   Form.setUpReactivity()
+      if Form.isReactive()
+        Form.setUpReactivity()
 
       if @data.docPromise?
         Q.when(@data.docPromise).then => Form.mergeLatestDoc(@)
@@ -198,7 +205,6 @@ Forms =
       formArgs.onRender?.apply(@, arguments)
 
     Form.destroyed = ->
-      console.debug 'Destroyed form', @, arguments
       template = @
       template.isDestroyed = true
       formArgs.onDestroy?.apply(@, arguments)
@@ -351,6 +357,22 @@ Forms =
     ################################################################################################
     # AUXILIARY
     ################################################################################################
+
+    Form.setUpDocs = (template) ->
+      template = getTemplate(template)
+      data = template.data
+      template.docs = Form.parseDocs(template)
+      data.doc = Form.getValues(template)
+      template.origDoc = Setter.clone(data.doc)
+
+    Form.updateDocs = (template) ->
+      template = getTemplate(template)
+      data = template.data
+      docs = _.map template.docs, (doc) -> Form.getCollection().findOne(doc._id)
+      template.docs = docs
+      data.doc = Form.getValues(template)
+      if data.docs?
+        data.docs = docs
 
     Form.parseDocs = (template) ->
       template = getTemplate(template)
