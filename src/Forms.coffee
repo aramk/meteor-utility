@@ -113,13 +113,17 @@ Forms =
     # LIFECYCLE
     ################################################################################################
 
+    origCreated = Form.created
     Form.created = ->
+      origCreated?()
       @settings = @data.settings ? {}
       Form.setUpDocs(@)
       @isSubmitting = false
       formArgs.onCreate?.apply(@, arguments)
 
+    origRendered = Form.rendered
     Form.rendered = ->
+      origRendered?()
       # Move the buttons to the same level as the title and content to allow using flex-layout.
       $buttons = @$('.crud.buttons')
       $crudForm = @$('.flex-panel:first')
@@ -204,7 +208,9 @@ Forms =
       
       formArgs.onRender?.apply(@, arguments)
 
+    oldDestroyed = Form.destroyed
     Form.destroyed = ->
+      oldDestroyed?()
       template = @
       template.isDestroyed = true
       formArgs.onDestroy?.apply(@, arguments)
