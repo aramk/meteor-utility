@@ -23,7 +23,7 @@ Package.onUse(function(api) {
   // NOTE: Using a custom fork:
   // https://github.com/aramk/meteor-collection-hooks.git#feature/exceptions
   api.use([
-    'aldeed:autoform@4.0.7',
+    'aldeed:autoform@5.1.2',
     'momentjs:moment@2.10.3',
     'matb33:collection-hooks@0.7.6',
     'semantic:ui-css@1.11.5'
@@ -39,7 +39,7 @@ Package.onUse(function(api) {
     'aldeed:collection2@2.3.2'
   ], ['client', 'server']);
   api.use([
-    'aldeed:autoform@4.0.7'
+    'aldeed:autoform@5.1.2'
   ], ['client', 'server'], {weak: true});
   // Make these available to the app to allow working with tiem and deferreds.
   api.imply(['momentjs:moment', 'aramk:q'], ['client','server'])
