@@ -434,12 +434,14 @@ Forms =
       origDoc = template.origDoc ? {}
       origDoc = Objects.flattenProperties(Setter.clone(origDoc))
       delete origDoc._id
-      keys = _.intersection _.keys(formDoc), _.keys(origDoc)
+      # Form doc is the full set of fields which the doc supports. We must avoid creating modifiers
+      # containing any other fields, since this form does not affect them.
+      keys = _.keys(formDoc)
       changes = {}
       _.each keys, (key) ->
-        formValue = formDoc[key]
-        origValue = origDoc[key]
-        if formValue? && origValue? && formValue.toString().trim() != origValue.toString().trim()
+        formValue = formDoc[key]?.toString().trim() ? ''
+        origValue = origDoc[key]?.toString().trim() ? ''
+        if formValue != '' && formValue != origValue
           changes[key] = formValue
       changes
 
