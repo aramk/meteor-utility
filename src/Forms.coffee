@@ -17,12 +17,11 @@ Forms =
       # callbacks.
       onSubmit: (insertDoc, updateDoc, currentDoc) ->
         args = arguments
-        template = @template
+        template = getTemplate(@template)
         console.debug 'onSubmit', args, @
         onSubmit = formArgs.onSubmit ? formArgs.hooks?.onSubmit
         result = onSubmit?.apply(@, args)
-        formTemplate = getTemplate(template)
-        callback = => formTemplate.settings.onSubmit?.apply(@, args)
+        callback = => template.settings.onSubmit?.apply(@, args)
         deferCallback(result, callback)
         # Perform logic for submitting bulk forms.
         if Form.isBulk(template)
@@ -30,28 +29,31 @@ Forms =
         # If no result is provided, prevent the form submission from refreshing the page.
         return (result ? false)
 
-      onSuccess: (operation, result, template) ->
+      onSuccess: (operation, result) ->
         args = arguments
-        formTemplate = getTemplate(template)
+        template = getTemplate(@template)
         console.debug 'onSuccess', args, @
         AutoForm.resetForm(name)
         onSuccess = formArgs.onSuccess ? formArgs.hooks?.onSuccess
         result = onSuccess?.apply(@, args)
-        callback = => formTemplate.settings.onSuccess?.apply(@, args)
+        callback = => template.settings.onSuccess?.apply(@, args)
         deferCallback(result, callback)
 
-      onError: (operation, error, template) ->
+      onError: (operation, error) ->
+        template = getTemplate(@template)
         Logger.error('Error submitting form', operation, error, template)
         onError = formArgs.onError ? formArgs.hooks?.onError
         onError?.apply(@, args)
         throw new Error(error)
 
-      beginSubmit: (formId, template) ->
-        getTemplate(template).isSubmitting = true
+      beginSubmit: ->
+        template = getTemplate(@template)
+        template.isSubmitting = true
         Form.setSubmitButtonDisabled(true, template)
 
-      endSubmit: (formId, template) ->
-        getTemplate(template).isSubmitting = false
+      endSubmit: ->
+        template = getTemplate(@template)
+        template.isSubmitting = false
         Form.setSubmitButtonDisabled(false, template)
 
     if formArgs.hooks?
@@ -187,8 +189,8 @@ Forms =
       # if Form.isBulk()
       #   Form.setUpBulkFields()
 
-      if Form.isReactive()
-        Form.setUpReactivity()
+      # if Form.isReactive()
+      #   Form.setUpReactivity()
 
       if @data.docPromise?
         Q.when(@data.docPromise).then => Form.mergeLatestDoc(@)
