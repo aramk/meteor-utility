@@ -118,6 +118,7 @@ Forms =
       origCreated?()
       @settings = @data.settings ? {}
       Form.setUpDocs(@)
+      if Form.isReactive() then Form.setUpReactivity()
       @isSubmitting = false
       formArgs.onCreate?.apply(@, arguments)
 
@@ -199,9 +200,6 @@ Forms =
 
       # if Form.isBulk()
       #   Form.setUpBulkFields()
-
-      if Form.isReactive()
-        Form.setUpReactivity()
 
       if @data.docPromise?
         Q.when(@data.docPromise).then => Form.mergeLatestDoc(@)
@@ -337,15 +335,21 @@ Forms =
     Form.setUpReactivity = (template) ->
       template = getTemplate(template)
       docs = Form.getDocs()
+      doc = template.data.doc
+      template.reactiveDoc = new ReactiveVar(doc)
+      template.getReactiveDoc = Form.getReactiveDoc.bind(template)
       # If no docs exist, no reactive updates can occur on them.
       return unless docs.length > 0
       docIdMap = {}
       _.each docs, (doc) -> docIdMap[doc._id] = true
       collection = Form.getCollection()
       singularName = Form.getSingularName()
+      updateDocs = ->
+        Form.updateDocs(template)
+        template.reactiveDoc.set(template.data.doc)
       # Check if the doc has changed and ensure the current form is not submitting to prevent
       # self-detection.
-      docHasChanged = (doc) -> docIdMap[doc._id]?# && !template.isSubmitting
+      docHasChanged = (doc) -> docIdMap[doc._id]?
       template.autorun ->
         Collections.observe collection,
           changed: (doc) ->
@@ -355,10 +359,14 @@ Forms =
               merge = confirm('The ' + singularName + ' being edited by this form has been
                   modified. Do you want to merge changes?')
             if merge then Form.mergeLatestDoc(template)
+            updateDocs()
           deleted: (doc) ->
             return unless docHasChanged(doc)
             alert('The ' + singularName + ' being edited by this form has been removed.')
+            updateDocs()
             # TODO(aramk) Change the form to insert.
+
+    Form.getReactiveDoc = (template) -> Form.getTemplate(template).reactiveDoc.get()
 
     ################################################################################################
     # AUXILIARY
