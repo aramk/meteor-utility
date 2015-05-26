@@ -17,12 +17,10 @@ Forms =
       # callbacks.
       onSubmit: (insertDoc, updateDoc, currentDoc) ->
         args = arguments
-        template = @template
-        console.debug 'onSubmit', args, @
+        template = getTemplate(@template)
         onSubmit = formArgs.onSubmit ? formArgs.hooks?.onSubmit
         result = onSubmit?.apply(@, args)
-        formTemplate = getTemplate(template)
-        callback = => formTemplate.settings.onSubmit?.apply(@, args)
+        callback = => template.settings.onSubmit?.apply(@, args)
         deferCallback(result, callback)
         # Perform logic for submitting bulk forms.
         if Form.isBulk(template)
@@ -30,28 +28,43 @@ Forms =
         # If no result is provided, prevent the form submission from refreshing the page.
         return (result ? false)
 
-      onSuccess: (operation, result, template) ->
+      onSuccess: (operation, result) ->
         args = arguments
-        formTemplate = getTemplate(template)
-        console.debug 'onSuccess', args, @
-        AutoForm.resetForm(name)
+        template = getTemplate(@template)
+        Form.updateDocs(template)
+        Form.setUpDocs(template)
         onSuccess = formArgs.onSuccess ? formArgs.hooks?.onSuccess
         result = onSuccess?.apply(@, args)
-        callback = => formTemplate.settings.onSuccess?.apply(@, args)
+        callback = => template.settings.onSuccess?.apply(@, args)
         deferCallback(result, callback)
 
-      onError: (operation, error, template) ->
+      before:
+        # Remove fields in the modifiers which haven't been changed.
+        update: (modifier) ->
+          $input = $(@autoSaveChangedElement)
+          changes = Form.getDocChanges(@template)
+          _.each ['$set', '$unset'], (propName) ->
+            fields = modifier[propName]
+            if fields?
+              _.each fields, (value, key) ->
+                unless changes[key]? then delete fields[key]
+          modifier
+
+      onError: (operation, error) ->
+        template = getTemplate(@template)
         Logger.error('Error submitting form', operation, error, template)
         onError = formArgs.onError ? formArgs.hooks?.onError
         onError?.apply(@, args)
         throw new Error(error)
 
-      beginSubmit: (formId, template) ->
-        getTemplate(template).isSubmitting = true
+      beginSubmit: ->
+        template = getTemplate(@template)
+        template.isSubmitting = true
         Form.setSubmitButtonDisabled(true, template)
 
-      endSubmit: (formId, template) ->
-        getTemplate(template).isSubmitting = false
+      endSubmit: ->
+        template = getTemplate(@template)
+        template.isSubmitting = false
         Form.setSubmitButtonDisabled(false, template)
 
     if formArgs.hooks?
@@ -71,7 +84,7 @@ Forms =
       formName: -> name
       # Without this a separate copy is passed across, which doesn't allow sharing data between
       # create method and form hooks.
-      doc: -> Form.getValues()
+      doc: -> Tracker.nonreactive -> Form.getValues()
       formTitle: -> Form.getFormTitle()
       formType: ->
         return if Form.isBulk()
@@ -83,7 +96,7 @@ Forms =
       hasDoc: -> Form.hasDoc()
       isBulk: -> Form.isBulk()
       autosave: -> formArgs.autosave
-      resetOnSuccess: -> formArgs.resetOnSuccess
+      resetOnSuccess: -> formArgs.resetOnSuccess ? false
 
     ################################################################################################
     # EVENTS
@@ -92,7 +105,6 @@ Forms =
     Form.events
       'click button.cancel': (e, template) ->
         e.preventDefault()
-        console.debug 'onCancel', arguments, @
         formArgs.onCancel?(template)
         formTemplate = getTemplate(template)
         formTemplate.settings.onCancel?()
@@ -101,16 +113,18 @@ Forms =
     # LIFECYCLE
     ################################################################################################
 
+    origCreated = Form.created
     Form.created = ->
+      origCreated?()
       @settings = @data.settings ? {}
-      @docs = Form.parseDocs()
-      @data.doc = Form.getValues()
-      @origDoc = Setter.clone(@data.doc)
+      Form.setUpDocs(@)
+      if Form.isReactive() then Form.setUpReactivity()
       @isSubmitting = false
       formArgs.onCreate?.apply(@, arguments)
 
+    origRendered = Form.rendered
     Form.rendered = ->
-      console.debug 'Rendered form', @, arguments
+      origRendered?()
       # Move the buttons to the same level as the title and content to allow using flex-layout.
       $buttons = @$('.crud.buttons')
       $crudForm = @$('.flex-panel:first')
@@ -187,16 +201,14 @@ Forms =
       # if Form.isBulk()
       #   Form.setUpBulkFields()
 
-      if Form.isReactive()
-        Form.setUpReactivity()
-
       if @data.docPromise?
         Q.when(@data.docPromise).then => Form.mergeLatestDoc(@)
       
       formArgs.onRender?.apply(@, arguments)
 
+    oldDestroyed = Form.destroyed
     Form.destroyed = ->
-      console.debug 'Destroyed form', @, arguments
+      oldDestroyed?()
       template = @
       template.isDestroyed = true
       formArgs.onDestroy?.apply(@, arguments)
@@ -323,15 +335,21 @@ Forms =
     Form.setUpReactivity = (template) ->
       template = getTemplate(template)
       docs = Form.getDocs()
+      doc = template.data.doc
+      template.reactiveDoc = new ReactiveVar(doc)
+      template.getReactiveDoc = Form.getReactiveDoc.bind(template)
       # If no docs exist, no reactive updates can occur on them.
       return unless docs.length > 0
       docIdMap = {}
       _.each docs, (doc) -> docIdMap[doc._id] = true
       collection = Form.getCollection()
       singularName = Form.getSingularName()
+      updateDocs = ->
+        Form.updateDocs(template)
+        template.reactiveDoc.set(template.data.doc)
       # Check if the doc has changed and ensure the current form is not submitting to prevent
       # self-detection.
-      docHasChanged = (doc) -> docIdMap[doc._id]?# && !template.isSubmitting
+      docHasChanged = (doc) -> docIdMap[doc._id]?
       template.autorun ->
         Collections.observe collection,
           changed: (doc) ->
@@ -341,14 +359,34 @@ Forms =
               merge = confirm('The ' + singularName + ' being edited by this form has been
                   modified. Do you want to merge changes?')
             if merge then Form.mergeLatestDoc(template)
+            updateDocs()
           deleted: (doc) ->
             return unless docHasChanged(doc)
             alert('The ' + singularName + ' being edited by this form has been removed.')
+            updateDocs()
             # TODO(aramk) Change the form to insert.
+
+    Form.getReactiveDoc = (template) -> Form.getTemplate(template).reactiveDoc.get()
 
     ################################################################################################
     # AUXILIARY
     ################################################################################################
+
+    Form.setUpDocs = (template) ->
+      template = getTemplate(template)
+      data = template.data
+      template.docs = Form.parseDocs(template)
+      data.doc = Form.getValues(template)
+      template.origDoc = Setter.clone(data.doc)
+
+    Form.updateDocs = (template) ->
+      template = getTemplate(template)
+      data = template.data
+      docs = _.map template.docs, (doc) -> Form.getCollection().findOne(doc._id)
+      template.docs = docs
+      data.doc = Form.getValues(template)
+      if data.docs?
+        data.docs = docs
 
     Form.parseDocs = (template) ->
       template = getTemplate(template)
@@ -404,12 +442,14 @@ Forms =
       origDoc = template.origDoc ? {}
       origDoc = Objects.flattenProperties(Setter.clone(origDoc))
       delete origDoc._id
-      keys = _.intersection _.keys(formDoc), _.keys(origDoc)
+      # Form doc is the full set of fields which the doc supports. We must avoid creating modifiers
+      # containing any other fields, since this form does not affect them.
+      keys = _.keys(formDoc)
       changes = {}
       _.each keys, (key) ->
-        formValue = formDoc[key]
-        origValue = origDoc[key]
-        if formValue? && origValue? && formValue.toString().trim() != origValue.toString().trim()
+        formValue = formDoc[key]?.toString().trim() ? ''
+        origValue = origDoc[key]?.toString().trim() ? ''
+        if formValue != '' && formValue != origValue
           changes[key] = formValue
       changes
 
