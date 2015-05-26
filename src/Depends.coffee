@@ -25,16 +25,16 @@ Depends =
       deps = []
     isCallback = Types.isFunction(value)
     if isCallback
-      value = bindMeteor(value)
+      value = Meteor.bindEnvironment(value)
     df = @_getDeferred(name)
     if Q.isFulfilled(df.promise)
       throw new Error('Dependency with name "' + name + '" already defined.')
     log('Defined dependency', name, deps)
     @on(deps).then(
-      bindMeteor (depsResult) ->
+      Meteor.bindEnvironment (depsResult) ->
         value = if isCallback then value.apply(null, depsResult) else value
         Q.when(value).then(
-          bindMeteor (valueResult) ->
+          Meteor.bindEnvironment (valueResult) ->
             log('Resolved dependency', name, valueResult)
             df.resolve(valueResult)
           df.reject
@@ -62,11 +62,11 @@ Depends =
     unless Types.isArray(deps)
       deps = [deps]
     if callback
-      callback = bindMeteor(callback)
+      callback = Meteor.bindEnvironment(callback)
     promises = _.map deps, (name) => @_getDeferred(name).promise
     log('Waiting for dependencies', deps)
     promise = Q.all(promises)
-    promise.then bindMeteor (results) ->
+    promise.then Meteor.bindEnvironment (results) ->
       log('Dependencies resolved', deps, results)
       if callback
         callback.apply(null, results)
@@ -74,4 +74,3 @@ Depends =
     promise
 
 log = -> console.log.apply(console, arguments) if Depends.debug
-bindMeteor = -> Meteor.bindEnvironment.apply(Meteor, arguments)
