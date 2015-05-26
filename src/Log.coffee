@@ -25,11 +25,13 @@ Log =
     code = @_levels[level]
     return typeof code != 'undefined' && code <= @_levels[currentLevel]
 
+  # Enables the Log functions if they have been disabled.
   on: ->
     return if @_loggingOn
     @_loggingOn = true
     _.each Object.keys(FunctionReferences), (f) => @[f] = FunctionReferences[f]
 
+  # Disables the Log functions.
   off: ->
     return unless @_loggingOn
     @_loggingOn = false
@@ -43,15 +45,22 @@ Log =
 
   error: -> @shouldLog('error') && Log.msg('ERROR', arguments, console.error)
 
-  msg: (msg, args, func) ->
+  # Prints the message in `args` to the console function `func` (defaults to `console.log`),
+  # prepended with the string `[channel]`.
+  msg: (channel, args, func) ->
     return if @level == 'off'
     func = Setter.defaultValue(func, console.log)
+    # Ensure the message string is at least five characters for prettier printing.
+    if channel.length < 5
+      channel += Array(6 - channel.length).join(' ')
+
     args = Array.prototype.slice.call(args)
-    args.splice(0, 0, '[' + msg + '] ')
+    args.splice(0, 0, '[' + channel + '] ')
     func.apply(console, args)
     # Logging should have no return.
     return undefined
 
+  # Prints a stack trace from the caller's point of execution.
   trace: ->
     e = new Error('dummy')
     stack = e.stack.replace(/^[^\(]+?[\n$]/gm, '')
@@ -94,14 +103,13 @@ FunctionReferences =
 global = @
 console = global.console
 
-# For those without a console
+# For those without a console.
 if typeof console == 'undefined'
   console = {}
-  funcs = ['log', 'debug', 'error', 'warn', 'time', 'timeEnd']
   _.each FunctionReferences, (func, funcName) ->
     # Ignorance is bliss
     console[funcName] = ->
 
 if Meteor?
-  # Log is already defined in the logging pacakge, so we define a different global variable for now.
+  # Log is already defined in the logging package, so we define a different global variable for now.
   Logger = Log
