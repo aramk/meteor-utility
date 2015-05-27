@@ -137,7 +137,7 @@ Forms =
       if $submit.closest('form').length == 0
         $submit.click => $form.submit()
 
-      schemaInputs = Form.getSchemaInputs()
+      schemaInputs = Form.getSchemaInputs(@)
 
       popupInputs = []
       hasRequiredField = false
@@ -162,6 +162,8 @@ Forms =
         if required
           Forms.addRequiredLabel($label)
           hasRequiredField = true
+
+      Form.setUpFields(@)
 
       if hasRequiredField
         @$('.ui.form.segment').append($('<div class="footer"><div class="required"></div>Required field</div>'))
@@ -198,9 +200,6 @@ Forms =
         helpMode = Session.get 'helpMode'
         if helpMode then addPopups() else removePopups()
 
-      # if Form.isBulk()
-      #   Form.setUpBulkFields()
-
       if @data.docPromise?
         Q.when(@data.docPromise).then => Form.mergeLatestDoc(@)
       
@@ -236,6 +235,7 @@ Forms =
       _.each values, (value, key) ->
         $input = Forms.getFieldElement(key, $form)
         Forms.setInputValue($input, value)
+      Form.setUpFields(template)
 
     Form.getBulkValues = (template, docs) ->
       values = {}
@@ -300,19 +300,6 @@ Forms =
       _.each schemaArgs, (field, fieldId) ->
         field.optional = true
       new SimpleSchema(schemaArgs)
-
-    # Form.setUpBulkFields = (template) ->
-    #   template = getTemplate(template)
-    #   values = Form.getBulkValues()
-    #   schemaInputs = Form.getSchemaInputs(template)
-    #   _.each schemaInputs, (input, key) ->
-    #     $input = $(input.node)
-    #     value = Objects.getModifierProperty(values, key)
-    #     if Setter.isDefined(value)
-    #       placeholder = ''
-    #     else
-
-    #     $input.attr('placeholder', placeholder)
 
     Form.getSampleValues = (paramId, template) ->
       template = getTemplate(template)
@@ -403,6 +390,19 @@ Forms =
         else
           doc
 
+    Form.setUpFields = (template) ->
+      template = getTemplate(template)
+      schemaInputs = Form.getSchemaInputs(template)
+      _.each schemaInputs, (input, key) ->
+        # Round float fields to 2 decimal places.
+        $input = $(input.node)
+        field = input.field
+        if field.type == Number && field.decimal && formArgs.roundFloats != false
+          decimals = field.decimals ? 2
+          value = Forms.getInputValue($input)
+          value = parseFloat(value).toFixed(2)
+          Forms.setInputValue($input, value)
+
     Form.getFormTitle = ->
       collectionName = Collections.getTitle(Form.getCollection())
       singularName = Form.getSingularName()
@@ -478,6 +478,7 @@ Forms =
           # are.
           if Forms.setInputValue($input, value)
             mergedValues[key] = value
+      Form.setUpFields(template)
       mergedValues
 
     Form.getInputValues = (template) ->
