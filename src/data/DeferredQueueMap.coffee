@@ -20,4 +20,4 @@ class DeferredQueueMap
     return Q.when() unless queue
     queue.waitForAll()
 
-  waitForAll: (id) -> Q.all _.map @queues, (queue, id) => @wait(id)
+  waitForAll: -> Q.all _.map @queues, (queue, id) => @wait(id)

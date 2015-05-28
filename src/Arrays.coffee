@@ -28,7 +28,7 @@ Arrays =
 
   # @param {Array} array
   # @param {Number} size - The maximum size of each bucket.
-  # @returns {Array.<Array>} - The set of arrays obtained by splitting into buckets of the given
+  # @returns {Array.<Array>} The set of arrays obtained by splitting into buckets of the given
   #     size.
   buckets: (array, size) ->
     unless size > 0
@@ -41,3 +41,8 @@ Arrays =
       arrays.push bucket
       currIndex += size
     arrays
+
+  # @param {Array} a
+  # @param {Array} b
+  # @returns {Boolean} Whether the given arrays have the same set of items.
+  isEqualSet: (a, b) -> _.union(a, b).length == a.length == b.length

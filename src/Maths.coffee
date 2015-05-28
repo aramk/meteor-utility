@@ -28,12 +28,28 @@ Maths =
   # @param {Function} [getValue] - A function when given the item returns its numerical value.
   # @returns {Number} The sum of all the numerical values of the given items.
   sum: (array, getValue) ->
-    getValue ?= (item) -> item
+    getValue = @_getValueGetter(getValue)
+    array = @_filterInvalidValues(array, getValue)
     _.reduce array, ((memo, item) -> memo + getValue(item)), 0
 
-  mean: (array) ->
+  # @param {Array} array - An array of items.
+  # @param {Function} [getValue] - A function when given the item returns its numerical value.
+  # @returns {Number} The mean average of all the numerical values of the given items.
+  mean: (array, getValue) ->
+    getValue = @_getValueGetter(getValue)
+    array = @_filterInvalidValues(array, getValue)
     len = array.length
-    unless len > 0
-      return null
-    @sum(array) / len
+    unless len > 0 then return null
+    sum = @sum(array)
+    unless sum? then return null
+    sum / len
+
+  # @param {Array} array - An array of items.
+  # @param {Function} [getValue] - A function when given the item returns its numerical value.
+  # @returns {Array} The items in the array which have a defined value (not undefined, null or NaN).
+  _filterInvalidValues: (array, getValue) ->
+    getValue = @_getValueGetter(getValue)
+    _.filter array, (item) -> Numbers.isDefined(getValue(item))
+
+  _getValueGetter: (getter) -> getter ? (item) -> item
 

@@ -31,10 +31,13 @@ Setter =
     else
       lodash.cloneDeep(src)
 
-   # Deeply merges defaults, relying on _.merge(a,b) returning a if it isn't an object to prevent
-   # source property values overriding their defined destinations.
+  # @param {Object} object
+  # @param {Object} [defaults]
+  # @returns {Object} The object argument. If defaults is defined it is deeply merged.
+  # NOTE: Relying on _.merge(A,B) returning A if it isn't an object to prevent
+  # source property values overriding their defined destinations.
   defaults: lodash.partialRight(lodash.merge, deep)
 
-   # @param {*} value
-   # @returns Whether the given value is not an non-empty string, null, undefined or NaN.
+  # @param {*} value
+  # @returns Whether the given value is not an non-empty string, null, undefined or NaN.
   isDefined: (value) -> value != '' && value? && (!Types.isNumber(value) || !isNaN(value))
