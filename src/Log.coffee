@@ -87,7 +87,7 @@ Log =
       console.timeEnd(name)
 
 # Allows setting the logging level via GET variable
-if typeof Window != 'undefined'
+if Window?
   logGet = Window.GET('log')
   if logGet
     Log.setLevel(logGet)
@@ -113,3 +113,8 @@ if typeof console == 'undefined'
 if Meteor?
   # Log is already defined in the logging package, so we define a different global variable for now.
   Logger = Log
+  if Meteor.isServer
+    logLevel = process.env.LOG_LEVEL
+    if logLevel?
+      console.log('Log level:', logLevel)
+      Logger.setLevel(logLevel)
