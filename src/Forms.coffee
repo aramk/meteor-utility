@@ -440,7 +440,7 @@ Forms =
       template = getTemplate(template)
       formDoc = Form.getInputValues(template)
       origDoc = template.origDoc ? {}
-      origDoc = Objects.flattenProperties(Setter.clone(origDoc))
+      origDoc = Objects.flattenProperties(origDoc)
       delete origDoc._id
       # Form doc is the full set of fields which the doc supports. We must avoid creating modifiers
       # containing any other fields, since this form does not affect them.
