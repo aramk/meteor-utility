@@ -39,15 +39,18 @@ Forms =
         deferCallback(result, callback)
 
       before:
-        # Remove fields in the modifiers which haven't been changed.
         update: (modifier) ->
-          $input = $(@autoSaveChangedElement)
-          changes = Form.getDocChanges(@template)
-          _.each ['$set', '$unset'], (propName) ->
-            fields = modifier[propName]
-            if fields?
-              _.each fields, (value, key) ->
-                unless changes[key]? then delete fields[key]
+          # TODO(aramk) This can result in modifier being empty and fail during submission.
+          # TODO(aramk) Sometimes form fields are skipped when retrieving their values.
+          if formArgs.submitDiff
+            # Remove fields in the modifiers which haven't been changed.
+            $input = $(@autoSaveChangedElement)
+            changes = Form.getDocChanges(@template)
+            _.each ['$set', '$unset'], (propName) ->
+              fields = modifier[propName]
+              if fields?
+                _.each fields, (value, key) ->
+                  unless changes[key]? then delete fields[key]
           modifier
 
       onError: (operation, error) ->
