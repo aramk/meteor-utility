@@ -367,7 +367,6 @@ Forms =
       data = template.data
       template.docs = Form.parseDocs(template)
       data.doc = Form.getValues(template)
-      template.origDoc = Setter.clone(data.doc)
 
     Form.updateDocs = (template) ->
       template = getTemplate(template)
@@ -405,6 +404,7 @@ Forms =
           value = Forms.getInputValue($input)
           value = parseFloat(value).toFixed(2)
           Forms.setInputValue($input, value)
+      template.origFormDoc = Form.getInputValues(template)
 
     Form.getFormTitle = ->
       collectionName = Collections.getTitle(Form.getCollection())
@@ -442,16 +442,14 @@ Forms =
     Form.getDocChanges = (template) ->
       template = getTemplate(template)
       formDoc = Form.getInputValues(template)
-      origDoc = template.origDoc ? {}
-      origDoc = Objects.flattenProperties(origDoc)
-      delete origDoc._id
+      origFormDoc = template.origFormDoc ? {}
       # Form doc is the full set of fields which the doc supports. We must avoid creating modifiers
       # containing any other fields, since this form does not affect them.
       keys = _.keys(formDoc)
       changes = {}
       _.each keys, (key) ->
         formValue = formDoc[key]?.toString().trim() ? ''
-        origValue = origDoc[key]?.toString().trim() ? ''
+        origValue = origFormDoc[key]?.toString().trim() ? ''
         if formValue != '' && formValue != origValue
           changes[key] = formValue
       changes

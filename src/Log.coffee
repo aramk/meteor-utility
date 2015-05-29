@@ -12,12 +12,12 @@ Log =
     debug: 5
 
   _timers: {}
-
-  setLevel: (level) ->
-    if @_levels[level]?
-      @level = level
-
   _loggingOn: true
+  _showTimetamps: false
+
+  setLevel: (level) -> if @_levels[level]? then @level = level
+
+  setShowTimestamps: (show) -> @_showTimetamps = show
 
   shouldLog: (level, currentLevel) ->
     currentLevel ?= @level
@@ -37,13 +37,13 @@ Log =
     @_loggingOn = false
     _.each Object.keys(FunctionReferences), (f) => @[f] = ->
 
-  debug: -> @shouldLog('debug') && Log.msg('DEBUG', arguments, console.debug)
+  debug: -> @shouldLog('debug') && @msg('DEBUG', arguments, console.debug)
 
-  info: -> @shouldLog('info') && Log.msg('INFO', arguments)
+  info: -> @shouldLog('info') && @msg('INFO', arguments)
 
-  warn: -> @shouldLog('warn') && Log.msg('WARNING', arguments, console.warn)
+  warn: -> @shouldLog('warn') && @msg('WARN', arguments, console.warn)
 
-  error: -> @shouldLog('error') && Log.msg('ERROR', arguments, console.error)
+  error: -> @shouldLog('error') && @msg('ERROR', arguments, console.error)
 
   # Prints the message in `args` to the console function `func` (defaults to `console.log`),
   # prepended with the string `[channel]`.
@@ -51,11 +51,12 @@ Log =
     return if @level == 'off'
     func = Setter.defaultValue(func, console.log)
     # Ensure the message string is at least five characters for prettier printing.
-    if channel.length < 5
-      channel += Array(6 - channel.length).join(' ')
-
-    args = Array.prototype.slice.call(args)
-    args.splice(0, 0, '[' + channel + '] ')
+    padding = ''
+    if channel.length < 5 then padding = new Array(6 - channel.length).join(' ')
+    args = _.toArray(args)
+    stamp = '[' + channel + ']' + padding
+    if @_showTimetamps then stamp += '[' + moment().format() + ']'
+    args.splice(0, 0, stamp + ' ')
     func.apply(console, args)
     # Logging should have no return.
     return undefined
