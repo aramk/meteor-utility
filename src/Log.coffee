@@ -56,7 +56,7 @@ Log =
     args = _.toArray(args)
     stamp = '[' + channel + ']' + padding
     if @_showTimetamps then stamp += '[' + moment().format() + ']'
-    args.splice(0, 0, stamp + ' ')
+    args.splice(0, 0, stamp)
     func.apply(console, args)
     # Logging should have no return.
     return undefined
