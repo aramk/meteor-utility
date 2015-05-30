@@ -399,7 +399,7 @@ Forms =
         # Round float fields to 2 decimal places.
         $input = $(input.node)
         field = input.field
-        if field.type == Number && field.decimal && formArgs.roundFloats != false
+        if field.type == Number && field.decimal && formArgs.roundFloats
           decimals = field.decimals ? 2
           value = Forms.getInputValue($input)
           value = parseFloat(value).toFixed(2)
