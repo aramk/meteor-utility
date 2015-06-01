@@ -375,7 +375,7 @@ Forms =
       template.docs = docs
       data.doc = Form.getValues(template)
       if data.docs?
-        data.docs = docs
+        data.docs = _.map docs, (doc) -> doc._id
 
     Form.parseDocs = (template) ->
       template = getTemplate(template)
