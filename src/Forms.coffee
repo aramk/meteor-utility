@@ -52,10 +52,10 @@ Forms =
 
       onError: (operation, error) ->
         template = getTemplate(@template)
-        Logger.error('Error submitting form', operation, error, template)
+        Logger.error(error.message)
+        Logger.error('Form error', operation, error, template, {notify: false})
         onError = formArgs.onError ? formArgs.hooks?.onError
         onError?.apply(@, args)
-        throw new Error(error)
 
       beginSubmit: ->
         template = getTemplate(@template)
@@ -116,7 +116,7 @@ Forms =
     origCreated = Form.created
     Form.created = ->
       origCreated?()
-      @settings = @data.settings ? {}
+      @settings = @data?.settings ? {}
       Form.setUpDocs(@)
       if Form.isReactive() then Form.setUpReactivity()
       @isSubmitting = false
@@ -201,7 +201,7 @@ Forms =
       # if Form.isBulk()
       #   Form.setUpBulkFields()
 
-      if @data.docPromise?
+      if @data?.docPromise?
         Q.when(@data.docPromise).then => Form.mergeLatestDoc(@)
       
       formArgs.onRender?.apply(@, arguments)
@@ -335,7 +335,7 @@ Forms =
     Form.setUpReactivity = (template) ->
       template = getTemplate(template)
       docs = Form.getDocs()
-      doc = template.data.doc
+      doc = template.data?.doc
       template.reactiveDoc = new ReactiveVar(doc)
       template.getReactiveDoc = Form.getReactiveDoc.bind(template)
       # If no docs exist, no reactive updates can occur on them.
@@ -346,7 +346,7 @@ Forms =
       singularName = Form.getSingularName()
       updateDocs = ->
         Form.updateDocs(template)
-        template.reactiveDoc.set(template.data.doc)
+        template.reactiveDoc.set(template.data?.doc)
       # Check if the doc has changed and ensure the current form is not submitting to prevent
       # self-detection.
       docHasChanged = (doc) -> docIdMap[doc._id]?
@@ -374,14 +374,14 @@ Forms =
 
     Form.setUpDocs = (template) ->
       template = getTemplate(template)
-      data = template.data
+      data = template.data ? {}
       template.docs = Form.parseDocs(template)
       data.doc = Form.getValues(template)
       template.origDoc = Setter.clone(data.doc)
 
     Form.updateDocs = (template) ->
       template = getTemplate(template)
-      data = template.data
+      data = template.data ? {}
       docs = _.map template.docs, (doc) -> Form.getCollection().findOne(doc._id)
       template.docs = docs
       data.doc = Form.getValues(template)
@@ -390,7 +390,7 @@ Forms =
 
     Form.parseDocs = (template) ->
       template = getTemplate(template)
-      data = template.data
+      data = template.data ? {}
       if data.docs?
         docs = data.docs
       else if data.doc?
@@ -495,8 +495,8 @@ Forms =
       Form.getSubmitButton(template).toggleClass('disabled', !!disabled)
 
     Form.getSubmitButton = (template) ->
-      $buttons = template.$('.crud.buttons')
-      template.$('[type="submit"]', $buttons)
+      $form = Forms.getFormElement(template)
+      template.$('[type="submit"]', $form)
 
     Form.getSingularName = ->
       collectionName = formArgs.collectionName ? Collections.getTitle(Form.getCollection())
