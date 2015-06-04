@@ -14,6 +14,8 @@ Promises =
     df.promise
 
   runSync: (callback) ->
+    unless Types.isFunction(callback)
+      throw new Error 'Callback must be a function - received ' + Types.getTypeOf(callback)
     response = Async.runSync (done) ->
       try
         callbackResult = callback(done)
