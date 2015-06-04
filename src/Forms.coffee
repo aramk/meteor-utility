@@ -39,15 +39,18 @@ Forms =
         deferCallback(result, callback)
 
       before:
-        # Remove fields in the modifiers which haven't been changed.
         update: (modifier) ->
-          $input = $(@autoSaveChangedElement)
-          changes = Form.getDocChanges(@template)
-          _.each ['$set', '$unset'], (propName) ->
-            fields = modifier[propName]
-            if fields?
-              _.each fields, (value, key) ->
-                unless changes[key]? then delete fields[key]
+          # TODO(aramk) This can result in modifier being empty and fail during submission.
+          # TODO(aramk) Sometimes form fields are skipped when retrieving their values.
+          if formArgs.submitDiff
+            # Remove fields in the modifiers which haven't been changed.
+            $input = $(@autoSaveChangedElement)
+            changes = Form.getDocChanges(@template)
+            _.each ['$set', '$unset'], (propName) ->
+              fields = modifier[propName]
+              if fields?
+                _.each fields, (value, key) ->
+                  unless changes[key]? then delete fields[key]
           modifier
 
       onError: (operation, error) ->
@@ -137,7 +140,7 @@ Forms =
       if $submit.closest('form').length == 0
         $submit.click => $form.submit()
 
-      schemaInputs = Form.getSchemaInputs()
+      schemaInputs = Form.getSchemaInputs(@)
 
       popupInputs = []
       hasRequiredField = false
@@ -162,6 +165,8 @@ Forms =
         if required
           Forms.addRequiredLabel($label)
           hasRequiredField = true
+
+      Form.setUpFields(@)
 
       if hasRequiredField
         @$('.ui.form.segment').append($('<div class="footer"><div class="required"></div>Required field</div>'))
@@ -201,8 +206,7 @@ Forms =
       # if Form.isBulk()
       #   Form.setUpBulkFields()
 
-      if @data?.docPromise?
-        Q.when(@data.docPromise).then => Form.mergeLatestDoc(@)
+      if @data?.docPromise? then Q.when(@data.docPromise).then => Form.mergeLatestDoc(@)
       
       formArgs.onRender?.apply(@, arguments)
 
@@ -236,6 +240,7 @@ Forms =
       _.each values, (value, key) ->
         $input = Forms.getFieldElement(key, $form)
         Forms.setInputValue($input, value)
+      Form.setUpFields(template)
 
     Form.getBulkValues = (template, docs) ->
       values = {}
@@ -301,19 +306,6 @@ Forms =
         field.optional = true
       new SimpleSchema(schemaArgs)
 
-    # Form.setUpBulkFields = (template) ->
-    #   template = getTemplate(template)
-    #   values = Form.getBulkValues()
-    #   schemaInputs = Form.getSchemaInputs(template)
-    #   _.each schemaInputs, (input, key) ->
-    #     $input = $(input.node)
-    #     value = Objects.getModifierProperty(values, key)
-    #     if Setter.isDefined(value)
-    #       placeholder = ''
-    #     else
-
-    #     $input.attr('placeholder', placeholder)
-
     Form.getSampleValues = (paramId, template) ->
       template = getTemplate(template)
       docs = Form.getDocs()
@@ -377,7 +369,6 @@ Forms =
       data = template.data ? {}
       template.docs = Form.parseDocs(template)
       data.doc = Form.getValues(template)
-      template.origDoc = Setter.clone(data.doc)
 
     Form.updateDocs = (template) ->
       template = getTemplate(template)
@@ -386,7 +377,7 @@ Forms =
       template.docs = docs
       data.doc = Form.getValues(template)
       if data.docs?
-        data.docs = docs
+        data.docs = _.map docs, (doc) -> doc._id
 
     Form.parseDocs = (template) ->
       template = getTemplate(template)
@@ -402,6 +393,20 @@ Forms =
           Form.getCollection().findOne(doc)
         else
           doc
+
+    Form.setUpFields = (template) ->
+      template = getTemplate(template)
+      schemaInputs = Form.getSchemaInputs(template)
+      _.each schemaInputs, (input, key) ->
+        # Round float fields to 2 decimal places.
+        $input = $(input.node)
+        field = input.field
+        if field.type == Number && field.decimal && formArgs.roundFloats
+          decimals = field.decimals ? 2
+          value = Forms.getInputValue($input)
+          value = parseFloat(value).toFixed(2)
+          Forms.setInputValue($input, value)
+      template.origFormDoc = Form.getInputValues(template)
 
     Form.getFormTitle = ->
       collectionName = Collections.getTitle(Form.getCollection())
@@ -439,16 +444,14 @@ Forms =
     Form.getDocChanges = (template) ->
       template = getTemplate(template)
       formDoc = Form.getInputValues(template)
-      origDoc = template.origDoc ? {}
-      origDoc = Objects.flattenProperties(Setter.clone(origDoc))
-      delete origDoc._id
+      origFormDoc = template.origFormDoc ? {}
       # Form doc is the full set of fields which the doc supports. We must avoid creating modifiers
       # containing any other fields, since this form does not affect them.
       keys = _.keys(formDoc)
       changes = {}
       _.each keys, (key) ->
         formValue = formDoc[key]?.toString().trim() ? ''
-        origValue = origDoc[key]?.toString().trim() ? ''
+        origValue = origFormDoc[key]?.toString().trim() ? ''
         if formValue != '' && formValue != origValue
           changes[key] = formValue
       changes
@@ -478,6 +481,7 @@ Forms =
           # are.
           if Forms.setInputValue($input, value)
             mergedValues[key] = value
+      Form.setUpFields(template)
       mergedValues
 
     Form.getInputValues = (template) ->
