@@ -21,3 +21,5 @@ class DeferredQueueMap
     queue.waitForAll()
 
   waitForAll: -> Q.all _.map @queues, (queue, id) => @wait(id)
+
+  size: -> _.keys(@queues).length
