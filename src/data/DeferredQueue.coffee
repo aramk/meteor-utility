@@ -5,10 +5,7 @@ class DeferredQueue
 
   wait: (index) ->
     promise = @queue[index].promise
-    if promise
-      promise
-    else
-      Q.when(null)
+    if promise then promise else Q.when(null)
 
   waitForAll: -> Q.all _.map @queue, (df) -> df.promise
 
@@ -17,14 +14,16 @@ class DeferredQueue
     df = Q.defer()
     @queue.push(df)
     fin = => @queue.shift()
-    execute = ->
-      result = callback()
-      Q.when(result).then(df.resolve, df.reject).progress(df.notify)
-    execute = Meteor.bindEnvironment(execute)
+    execute = Meteor.bindEnvironment ->
+      try
+        df.resolve(callback())
+      catch e
+        df.reject(e)
     if len > 0
-      @wait(len - 1).then(execute, df.reject).fin(fin)
+      @wait(len - 1).then(execute, df.reject)
     else
-      execute().fin(fin)
+      execute()
+    df.promise.fin(fin)
     df.promise
 
   size: -> @queue.length
