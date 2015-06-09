@@ -5,6 +5,8 @@ Forms =
   defineModelForm: (formArgs) ->
     name = formArgs.name
     Form = Template[name]
+    unless name
+      throw new Error 'No name provided for form'
     unless Form
       throw new Error 'No template defined with name ' + name
 
@@ -371,9 +373,10 @@ Forms =
       data.doc = Form.getValues(template)
 
     Form.updateDocs = (template) ->
+      return unless Form.getCollection()
       template = getTemplate(template)
       data = template.data ? {}
-      docs = _.map template.docs, (doc) -> Form.getCollection().findOne(doc._id)
+      docs = _.map template.docs, (doc) -> collection.findOne(doc._id)
       template.docs = docs
       data.doc = Form.getValues(template)
       if data.docs?
@@ -412,7 +415,10 @@ Forms =
       collectionName = Collections.getTitle(Form.getCollection())
       singularName = Form.getSingularName()
       docs = Form.getDocs()
-      suffix = Strings.pluralize(singularName, docs.length, collectionName)
+      if docs.length > 0
+        suffix = Strings.pluralize(singularName, docs.length, collectionName)
+      else
+        suffix = singularName
       suffix = Strings.toTitleCase(suffix)
       if Form.isBulk()
         suffix = docs.length + ' ' + suffix
@@ -588,7 +594,7 @@ Forms =
     else
       $input.val()
 
-  isDropdown: ($input) -> Template.dropdown.isDropdown($input)
+  isDropdown: ($input) -> Template.dropdown?.isDropdown($input) ? false
 
   # We may pass the temporary collection as an attribute to autoform templates, so we need to
   # define this to avoid errors since it is passed into the actual <form> HTML object.
