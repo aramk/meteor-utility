@@ -58,11 +58,13 @@ Forms =
       onError: (operation, error) ->
         args = arguments
         template = getTemplate(@template)
-        Logger.error(error.message)
+        settings = template.settings
+        unless formArgs.loggerNotify == false || settings.loggerNotify == false
+          Logger.error(error.message)
         Logger.error('Form error', operation, error, template, {notify: false})
         onError = formArgs.onError ? formArgs.hooks?.onError
         onError?.apply(@, args)
-        template.settings.onError?.apply(@, args)
+        settings.onError?.apply(@, args)
 
       beginSubmit: ->
         template = getTemplate(@template)
