@@ -25,7 +25,6 @@ Package.onUse(function(api) {
   // https://github.com/aramk/meteor-collection-hooks.git#feature/exceptions
   api.use([
     'aldeed:autoform@5.1.2',
-    'aramk:dropdown@0.5.0',
     'momentjs:moment@2.10.3',
     'matb33:collection-hooks@0.7.6',
     'semantic:ui-css@1.11.5',

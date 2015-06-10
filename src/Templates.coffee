@@ -15,9 +15,11 @@ Templates =
     viewQueue = [view]
     while viewQueue.length > 0
       view = viewQueue.pop()
-      return unless view
-      templateInstance = view.templateInstance?()
-      break if view.name == 'Template.' + name
+      break unless view
+      # If no template instance is found, keep the given instance as a fallback.
+      if view.name == 'Template.' + name
+        templateInstance = view.templateInstance?() ? templateInstance
+        break
       viewQueue.push(view.parentView)
     templateInstance
 
