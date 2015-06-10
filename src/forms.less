@@ -1,0 +1,60 @@
+.ui.form {
+  .required:before {
+    content: "*";
+    font-size: 16px;
+    color: red;
+    font-weight: normal;
+  }
+  form {
+    label {
+      position: relative;
+      .required:before {
+        margin: 0 5px;
+        float: left;
+      }
+      .value {
+        float: left;
+        margin-right: 5px;
+      }
+    }
+    > *, .form-group {
+      padding: 0 10px;
+      margin-bottom: 10px;
+      width: auto;
+      .control-label {
+        width: 100%;
+        display: block;
+      }
+    }
+    .form-group.dropdown {
+      label {
+        display: inline-block;
+        width: auto;
+        line-height: 26px;
+        margin-right: 10px;
+        .required:before {
+          margin: 0;
+          float: none;
+          position: absolute;
+          top: 0;
+          right: -8px;
+        }
+      }
+      .control-label {
+        width: auto;
+        display: block;
+        float: left;
+      }
+    }
+  }
+  .footer {
+    padding: 10px;
+    .required:before {
+      position: relative;
+      top: 0;
+      left: 0;
+      float: left;
+      margin-right: 5px;
+    }
+  }
+}

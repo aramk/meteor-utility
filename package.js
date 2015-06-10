@@ -17,8 +17,9 @@ Package.onUse(function(api) {
   ], ['client', 'server']);
   api.use([
     'deps',
-    'templating',
-    'jquery'
+    'jquery',
+    'less',
+    'templating'
   ], 'client');
   // NOTE: Using a custom fork:
   // https://github.com/aramk/meteor-collection-hooks.git#feature/exceptions
@@ -96,7 +97,8 @@ Package.onUse(function(api) {
     'src/Blobs.coffee',
     'src/Forms.coffee',
     'src/Templates.coffee',
-    'src/Window.coffee'
+    'src/Window.coffee',
+    'src/forms.less'
   ], 'client');
   api.addFiles([
     'src/Buffers.coffee'

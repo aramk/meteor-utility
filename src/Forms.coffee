@@ -36,9 +36,9 @@ Forms =
         Form.updateDocs(template)
         Form.setUpDocs(template)
         onSuccess = formArgs.onSuccess ? formArgs.hooks?.onSuccess
-        result = onSuccess?.apply(@, args)
+        successResult = onSuccess?.apply(@, args)
         callback = => template.settings.onSuccess?.apply(@, args)
-        deferCallback(result, callback)
+        deferCallback(successResult, callback)
 
       before:
         update: (modifier) ->
@@ -56,11 +56,13 @@ Forms =
           modifier
 
       onError: (operation, error) ->
+        args = arguments
         template = getTemplate(@template)
         Logger.error(error.message)
         Logger.error('Form error', operation, error, template, {notify: false})
         onError = formArgs.onError ? formArgs.hooks?.onError
         onError?.apply(@, args)
+        template.settings.onError?.apply(@, args)
 
       beginSubmit: ->
         template = getTemplate(@template)
@@ -628,10 +630,9 @@ Forms =
 ####################################################################################################
 
 deferCallback = (result, callback) ->
-  # Defer the callback if the result is a promise. Ignore if result is false. Otherwise execute
+  # Defer the callback if the result is a promise. Otherwise execute
   # callback immediately.
-  unless result == false
-    if result?.then
-      result.then -> callback()
-    else
-      callback()
+  if result?.then
+    result.then -> callback()
+  else
+    callback()
