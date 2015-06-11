@@ -377,7 +377,8 @@ Forms =
       data.doc = Form.getValues(template)
 
     Form.updateDocs = (template) ->
-      return unless Form.getCollection()
+      collection = Form.getCollection()
+      return unless collection
       template = getTemplate(template)
       data = template.data ? {}
       docs = _.map template.docs, (doc) -> collection.findOne(doc._id)
