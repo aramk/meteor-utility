@@ -307,11 +307,17 @@ Collections =
   addValidation: (collection, validate) ->
     collection.before.insert (userId, doc, options) =>
       return if options?.validate == false
-      @_handleValidationResult(validate(doc))
+      context = {userId: userId, options: options}
+      @_handleValidationResult validate.call context, doc
     collection.before.update (userId, doc, fieldNames, modifier, options) =>
       return if options?.validate == false
       doc = @simulateModifierUpdate(doc, modifier)
-      @_handleValidationResult(validate(doc))
+      context =
+        userId: userId
+        fieldNames: fieldNames
+        modifier: modifier
+        options: options
+      @_handleValidationResult validate.call context, doc
 
   _handleValidationResult: (result) ->
     # TODO(aramk) The deferred won't run in time since hooks are not asynchronous yet, so it won't
