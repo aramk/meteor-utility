@@ -342,9 +342,10 @@ Forms =
       _.each docs, (doc) -> docIdMap[doc._id] = true
       collection = Form.getCollection()
       singularName = Form.getSingularName()
-      updateDocs = ->
+      _updateDocs = ->
         Form.updateDocs(template)
         template.reactiveDoc.set(template.data?.doc)
+      updateDocs = _.debounce _updateDocs, 500
       # Check if the doc has changed and ensure the current form is not submitting to prevent
       # self-detection.
       docHasChanged = (doc) -> docIdMap[doc._id]?
