@@ -7,11 +7,13 @@ class DeferredQueueMap
     }, options)
 
   add: (id, callback) ->
-    queue = @queues[id] ?= new DeferredQueue()
+    queue = @get(id)
     if @options.exclusive && queue.size() > 0
       _.first(queue.getItems()).promise
     else
       queue.add(callback)
+
+  get: (id) -> @queues[id] ?= new DeferredQueue()
 
   clear: -> _.each @queues, (queue) -> queue.clear()
 

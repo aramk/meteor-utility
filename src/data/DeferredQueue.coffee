@@ -14,7 +14,9 @@ class DeferredQueue
     df = Q.defer()
     @queue.push(df)
     fin = => @queue.shift()
-    execute = Meteor.bindEnvironment ->
+    execute = Meteor.bindEnvironment =>
+      # If the promise is fulfilled due to a clear() then avoid running the callback.
+      if df.promise.isFulfilled() then return
       try
         df.resolve(callback())
       catch e
@@ -30,5 +32,4 @@ class DeferredQueue
 
   getItems: -> _.clone(@queue)
 
-  clear: ->
-    _.each @queue, (df) -> df.reject('Clearing DeferredQueue')
+  clear: -> _.each @queue, (df) -> df.reject('Clearing DeferredQueue')
