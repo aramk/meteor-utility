@@ -67,7 +67,6 @@ Templates =
       newValue = options.unmarshall(value)
       if newValue != reactiveVar.get()
         reactiveVar.set(newValue)
-      options.setValue.call($em, newValue)
     if options.debounce
       update = _.debounce(update, options.delay)
     $em.on(options.changeEvents, update)
