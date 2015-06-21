@@ -76,8 +76,19 @@ Forms =
         template.isSubmitting = false
         Form.setSubmitButtonDisabled(false, template)
 
-    if formArgs.hooks?
-      AutoForm.addHooks name, formArgs.hooks
+    hooks = formArgs.hooks
+    if hooks?
+      formToDoc = hooks.formToDoc
+      # If `formToDocOnUpdate` is true, the `formToDoc` hook is used for both inserts and updates
+      # (as in AutoForm < v5).
+      if hooks.formToDocOnUpdate == true && formToDoc?
+        hooks.formToModifier ?= (modifier) ->
+          doc = Collections.simulateModifierUpdate(@template.data.doc, modifier)
+          doc = formToDoc.call(@, doc)
+          modifier.$set = Objects.flattenProperties(doc)
+          delete modifier.$set._id
+          modifier
+      AutoForm.addHooks name, hooks
 
     ################################################################################################
     # HELPERS

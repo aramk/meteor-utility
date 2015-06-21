@@ -46,5 +46,5 @@ Promises =
     reactiveVar
 
   toCallback: (df) ->
-    unless Q.isPromise(df.promise) then throw new Error('Must provide Deferred promise')
+    unless Q.isPromise(df?.promise) then throw new Error('Must provide Deferred promise')
     (err, result) -> if err then df.reject(err) else df.resolve(result)
