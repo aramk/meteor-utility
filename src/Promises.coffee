@@ -38,3 +38,13 @@ Promises =
         throw err
     else
       response.result
+
+  toReactiveVar: (promise) ->
+    reactiveVar = new ReactiveVar()
+    set = (arg) -> reactiveVar.set(arg)
+    promise.then(set, set)
+    reactiveVar
+
+  toCallback: (df) ->
+    unless Q.isPromise(df.promise) then throw new Error('Must provide Deferred promise')
+    (err, result) -> if err then df.reject(err) else df.resolve(result)
