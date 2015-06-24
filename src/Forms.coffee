@@ -46,13 +46,13 @@ Forms =
           # TODO(aramk) Sometimes form fields are skipped when retrieving their values.
           if formArgs.submitDiff
             # Remove fields in the modifiers which haven't been changed.
-            $input = $(@autoSaveChangedElement)
+            # $input = $(@autoSaveChangedElement)
             changes = Form.getDocChanges(@template)
             _.each ['$set', '$unset'], (propName) ->
               fields = modifier[propName]
               if fields?
                 _.each fields, (value, key) ->
-                  unless changes[key]? then delete fields[key]
+                  if changes[key] == undefined then delete fields[key]
           modifier
 
       onError: (operation, error) ->
@@ -415,8 +415,8 @@ Forms =
           value = Forms.getInputValue($input)
           value = parseFloat(value).toFixed(2)
           Forms.setInputValue($input, value)
-      template.origFormDoc = Form.getInputValues(template)
-
+      template.formDoc = Form.getInputValues(template)
+    
     Form.getFormTitle = ->
       collectionName = Collections.getTitle(Form.getCollection())
       singularName = Form.getSingularName()
@@ -456,16 +456,17 @@ Forms =
     Form.getDocChanges = (template) ->
       template = getTemplate(template)
       formDoc = Form.getInputValues(template)
-      origFormDoc = template.origFormDoc ? {}
+      prevFormDoc = template.formDoc ? {}
       # Form doc is the full set of fields which the doc supports. We must avoid creating modifiers
       # containing any other fields, since this form does not affect them.
       keys = _.keys(formDoc)
       changes = {}
       _.each keys, (key) ->
         formValue = formDoc[key]?.toString().trim() ? ''
-        origValue = origFormDoc[key]?.toString().trim() ? ''
-        if formValue != '' && formValue != origValue
-          changes[key] = formValue
+        prevValue = prevFormDoc[key]?.toString().trim() ? ''
+        if formValue != prevValue
+          # Ensure empty values are null.
+          changes[key] = formValue || null
       changes
 
     # Merges the latest document into the form, giving precedence to the changed values in the form.
