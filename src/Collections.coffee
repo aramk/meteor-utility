@@ -25,7 +25,8 @@ Collections =
     if name then Strings.toTitleCase(name) else name
 
   # @param {String|Meteor.Collection|Cursor} arg
-  # @returns {Meteor.Collection|null} The underlying collection or null if none is found.
+  # @returns {Meteor.Collection|Cursor} Either a Meteor collection, a cursor, or null if none is
+  #     found.
   get: (arg) ->
     if Types.isString(arg)
       # Collection name.
@@ -56,20 +57,6 @@ Collections =
       arg
     else
       null
-
-  # @param {String|Meteor.Collection|Cursor} arg
-  # @returns {Meteor.Collection|Cursor} Either a Meteor collection, a cursor, or null if none is
-  #     found.
-  resolve: (arg) ->
-    if Types.isString(arg)
-      # Collection name.
-      return global[arg]
-    else if @isCursor(arg)
-      return arg
-    else if @isCollection(arg)
-      return arg
-    else
-      return null
 
   # @param obj
   # @returns {Boolean} Whether the given object is a collection.
