@@ -76,8 +76,19 @@ Forms =
         template.isSubmitting = false
         Form.setSubmitButtonDisabled(false, template)
 
-    if formArgs.hooks?
-      AutoForm.addHooks name, formArgs.hooks
+    hooks = formArgs.hooks
+    if hooks?
+      formToDoc = hooks.formToDoc
+      # If `formToDocOnUpdate` is true, the `formToDoc` hook is used for both inserts and updates
+      # (as in AutoForm < v5).
+      if hooks.formToDocOnUpdate == true && formToDoc?
+        hooks.formToModifier ?= (modifier) ->
+          doc = Collections.simulateModifierUpdate(@template.data.doc, modifier)
+          doc = formToDoc.call(@, doc)
+          modifier.$set = Objects.flattenProperties(doc)
+          delete modifier.$set._id
+          modifier
+      AutoForm.addHooks name, hooks
 
     ################################################################################################
     # HELPERS
@@ -438,6 +449,8 @@ Forms =
 
     Form.getElement = (template) -> Forms.getFormElement(getTemplate(template))
 
+    Form.getFieldElements = (template) -> Forms.getFieldElements(Form.getElement(template))
+
     Form.getFieldElement = (name, template) ->
       Forms.getFieldElement(name, Form.getElement(template), template)
 
@@ -498,7 +511,7 @@ Forms =
 
     Form.getInputValues = (template) ->
       template = getTemplate(template)
-      $inputs = Forms.getFieldElements(Forms.getFormElement(template))
+      $inputs = Form.getFieldElements(template)
       values = {}
       $inputs.each ->
         $input = $(@)
@@ -572,7 +585,9 @@ Forms =
 
   getFieldElement: (name, formElement) -> $('[data-schema-key="' + name + '"]:first', formElement)
 
-  getFieldElements: (formElement) -> $('[data-schema-key]', formElement)
+  getFieldElements: (formElement) ->
+    # Exclude fields in sub-forms, since they will belong to a different AutoForm and schema.
+    $('[data-schema-key]', formElement).not $('form [data-schema-key]', formElement)
 
   getFormElement: (template) -> template.$('form:first')
 
@@ -612,7 +627,8 @@ Forms =
     template.find('[name="' + name + '"]')
 
   getSchemaInputs: (template, arg) ->
-    $schemaInputs = template.$('[data-schema-key]')
+    formElement = Forms.getFormElement(template)
+    $schemaInputs = Forms.getFieldElements(formElement)
     schema = Collections.getSchema(arg)
     schemaInputs = {}
     if schema?
