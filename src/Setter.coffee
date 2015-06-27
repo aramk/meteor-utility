@@ -1,5 +1,5 @@
 deep = (value, other) -> lodash.merge(value, other, deep)
-lodashDefaults = lodash.partialRight(lodash.merge, deep)
+getLodashDefaults = _.once -> lodash.partialRight(lodash.merge, deep)
 
 Setter =
 
@@ -40,7 +40,7 @@ Setter =
   defaults: (obj, defaults) ->
     # Ensure the object is defined and default to an empty object to prevent returning undefined.
     obj ?= {}
-    lodashDefaults.call(lodash, obj, defaults)
+    getLodashDefaults().call(lodash, obj, defaults)
 
   # @param {*} value
   # @returns Whether the given value is not an non-empty string, null, undefined or NaN.
