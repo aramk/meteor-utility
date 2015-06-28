@@ -27,6 +27,9 @@ Forms =
         # Perform logic for submitting bulk forms.
         if Form.isBulk(template)
           Form.submitBulkForm(insertDoc, updateDoc, currentDoc, @, template)
+        else if !onSubmit?
+          # Ensure onSuccess() is called.
+          @done()
         # If no result is provided, prevent the form submission from refreshing the page.
         return (result ? false)
 
@@ -86,6 +89,9 @@ Forms =
           doc = Collections.simulateModifierUpdate(@template.data.doc, modifier)
           doc = formToDoc.call(@, doc)
           modifier.$set = Objects.flattenProperties(doc)
+          # Ensure keys in $set are not present in $unset.
+          if modifier.$unset
+            _.each modifier.$set, (value, key) -> delete modifier.$unset[key]
           delete modifier.$set._id
           modifier
       AutoForm.addHooks name, hooks
@@ -109,9 +115,11 @@ Forms =
       formType: ->
         return if Form.isBulk()
         doc = Form.getDocs()[0]
-        type = formArgs.type
-        return type if type
-        if doc then 'update' else 'insert'
+        type = Form.getTemplate().settings.formType
+        # Allow passing type = null to trigger onSubmit() hook.
+        if type == undefined then type = formArgs.type
+        if type == undefined then type = if doc then 'update' else 'insert'
+        type
       submitText: -> if Form.getDocs().length > 0 then 'Save' else 'Create'
       hasDoc: -> Form.hasDoc()
       isBulk: -> Form.isBulk()
