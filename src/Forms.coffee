@@ -14,13 +14,13 @@ Forms =
     # HOOKS
     ################################################################################################
 
-    AutoForm.addHooks name,
+    hooks =
       # Settings should be passed to the autoForm helper to ensure they are available in these
       # callbacks.
       onSubmit: (insertDoc, updateDoc, currentDoc) ->
         args = arguments
         template = getTemplate(@template)
-        onSubmit = formArgs.onSubmit ? formArgs.hooks?.onSubmit
+        onSubmit = formArgs.onSubmit
         result = onSubmit?.apply(@, args)
         callback = => template.settings.onSubmit?.apply(@, args)
         deferCallback(result, callback)
@@ -38,7 +38,7 @@ Forms =
         template = getTemplate(@template)
         Form.updateDocs(template)
         Form.setUpDocs(template)
-        onSuccess = formArgs.onSuccess ? formArgs.hooks?.onSuccess
+        onSuccess = formArgs.onSuccess
         successResult = onSuccess?.apply(@, args)
         callback = => template.settings.onSuccess?.apply(@, args)
         deferCallback(successResult, callback)
@@ -65,7 +65,7 @@ Forms =
         unless formArgs.loggerNotify == false || settings.loggerNotify == false
           Logger.error(error.message)
         Logger.error('Form error', operation, error, template, {notify: false})
-        onError = formArgs.onError ? formArgs.hooks?.onError
+        onError = formArgs.onError
         onError?.apply(@, args)
         settings.onError?.apply(@, args)
 
@@ -79,14 +79,29 @@ Forms =
         template.isSubmitting = false
         Form.setSubmitButtonDisabled(false, template)
 
-    hooks = formArgs.hooks
-    if hooks?
+    Form.addHooks = ->
+      if arguments.length == 1
+        formId = name
+        hooks = arguments[0]
+      else if arguments.length == 2
+        formId = arguments[0]
+        hooks = arguments[1]
+      else
+        throw new Error('Invalid arguments')
+      
       formToDoc = hooks.formToDoc
       # If `formToDocOnUpdate` is true, the `formToDoc` hook is used for both inserts and updates
       # (as in AutoForm < v5).
       if hooks.formToDocOnUpdate == true && formToDoc?
         hooks.formToModifier ?= (modifier) ->
-          doc = Collections.simulateModifierUpdate(@template.data.doc, modifier)
+          # If no document can be found, then this hook was fired when formType=null and no
+          # doc existed. Hence an empty doc should be used to ensure the modifier can still be
+          # applied and passed to formToDoc. NOTE: formToDoc would also have been called, but
+          # we should not pass this modifier since it may not match the output of formToDoc if
+          # changes were made. Use a temporary ID to ensure simulateModifierUpdate() can be called.
+          doc = @template.data.doc ? {_id: 'tmp'}
+          doc = Collections.simulateModifierUpdate(doc, modifier)
+          delete doc._id
           doc = formToDoc.call(@, doc)
           modifier.$set = Objects.flattenProperties(doc)
           # Ensure keys in $set are not present in $unset.
@@ -94,7 +109,10 @@ Forms =
             _.each modifier.$set, (value, key) -> delete modifier.$unset[key]
           delete modifier.$set._id
           modifier
-      AutoForm.addHooks name, hooks
+      AutoForm.addHooks formId, hooks
+
+    Setter.merge hooks, formArgs.hooks
+    Form.addHooks(hooks)
 
     ################################################################################################
     # HELPERS
@@ -118,7 +136,7 @@ Forms =
         type = Form.getTemplate().settings.formType
         # Allow passing type = null to trigger onSubmit() hook.
         if type == undefined then type = formArgs.type
-        if type == undefined then type = if doc then 'update' else 'insert'
+        if type == undefined then type = (if doc then 'update' else 'insert')
         type
       submitText: -> if Form.getDocs().length > 0 then 'Save' else 'Create'
       hasDoc: -> Form.hasDoc()
