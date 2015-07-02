@@ -18,7 +18,7 @@ Paths =
     while i < arguments.length
       path = @addLastSlash(path + arguments[i])
       i++
-    path
+    @removeLastSlash(path)
 
   isRelative: (path) -> /^(?!\/)[\s\S]/.test(path)
 
