@@ -120,7 +120,7 @@ Forms =
 
     Form.helpers
       collection: -> Form.getCollection()
-      schema: ->
+      schema: -> Tracker.nonreactive -> 
         if Form.isBulk()
           Form.getBulkSchema()
         else
@@ -129,8 +129,8 @@ Forms =
       # Without this a separate copy is passed across, which doesn't allow sharing data between
       # create method and form hooks.
       doc: -> Tracker.nonreactive -> Form.getValues()
-      formTitle: -> Form.getFormTitle()
-      formType: ->
+      formTitle: -> Tracker.nonreactive -> Form.getFormTitle()
+      formType: -> Tracker.nonreactive -> 
         return if Form.isBulk()
         doc = Form.getDocs()[0]
         type = Form.getTemplate().settings.formType
@@ -138,7 +138,7 @@ Forms =
         if type == undefined then type = formArgs.type
         if type == undefined then type = (if doc then 'update' else 'insert')
         type
-      submitText: -> if Form.getDocs().length > 0 then 'Save' else 'Create'
+      submitText: -> Tracker.nonreactive -> if Form.getDocs().length > 0 then 'Save' else 'Create'
       hasDoc: -> Form.hasDoc()
       isBulk: -> Form.isBulk()
       autosave: -> formArgs.autosave
@@ -210,6 +210,7 @@ Forms =
           hasRequiredField = true
 
       Form.setUpFields(@)
+      Form.setUpAutosave(@)
 
       if hasRequiredField
         @$('.ui.form.segment').append($('<div class="footer"><div class="required"></div>Required field</div>'))
@@ -453,6 +454,16 @@ Forms =
           value = parseFloat(value).toFixed(2)
           Forms.setInputValue($input, value)
       template.formDoc = Form.getInputValues(template)
+
+    Form.setUpAutosave = (template) ->
+      template = getTemplate(template)
+      $form = Form.getElement(template)
+      schemaInputs = Form.getSchemaInputs(template)
+      # Changing dropdown fields doesn't trigger a form change.
+      _.each schemaInputs, (input, key) ->
+        $input = $(input.node)
+        return unless Forms.isDropdown($input)
+        $input.on 'change', -> $form.submit()
     
     Form.getFormTitle = ->
       collectionName = Collections.getTitle(Form.getCollection())
