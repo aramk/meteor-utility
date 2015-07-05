@@ -420,7 +420,7 @@ Forms =
       return unless collection
       template = getTemplate(template)
       data = template.data ? {}
-      docs = _.map template.docs, (doc) -> collection.findOne(doc._id)
+      docs = _.map template.docs, (doc) -> collection.findOne(_id: doc._id)
       template.docs = docs
       data.doc = Form.getValues(template)
       if data.docs?
