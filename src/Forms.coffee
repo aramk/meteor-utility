@@ -181,7 +181,9 @@ Forms =
       # event manually.
       $submit = Form.getSubmitButton(@)
       if $submit.closest('form').length == 0
-        $submit.click => $form.submit()
+        $submit.click =>
+          Logger.debug('Submitting form...', formArgs)
+          $form.submit()
 
       schemaInputs = Form.getSchemaInputs(@)
 
@@ -210,7 +212,6 @@ Forms =
           hasRequiredField = true
 
       Form.setUpFields(@)
-      Form.setUpAutosave(@)
 
       if hasRequiredField
         @$('.ui.form.segment').append($('<div class="footer"><div class="required"></div>Required field</div>'))
@@ -250,7 +251,12 @@ Forms =
       # if Form.isBulk()
       #   Form.setUpBulkFields()
 
-      if @data?.docPromise? then Q.when(@data.docPromise).then => Form.mergeLatestDoc(@)
+      if @data?.docPromise?
+        Q.when(@data.docPromise).then =>
+          Form.mergeLatestDoc(@)
+          Form.setUpAutosave(@)
+      else
+        Form.setUpAutosave(@)
       
       formArgs.onRender?.apply(@, arguments)
 
@@ -458,9 +464,6 @@ Forms =
       template.formDoc = Form.getInputValues(template)
 
     Form.setUpAutosave = (template) ->
-      # TODO(aramk) This is causing the form to submit and remove fields. Disabled for now.
-      return
-
       return unless formArgs.autosave
       template = getTemplate(template)
       $form = Form.getElement(template)
@@ -540,7 +543,8 @@ Forms =
       _.each docs, (doc) ->
         doc = collection.findOne(doc._id)
         if doc? then latestDocs.push(doc)
-      latestValues = if docs.length > 1 then Form.getBulkValues(template, latestDocs) else docs[0]
+      latestValues =
+        if docs.length > 1 then Form.getBulkValues(template, latestDocs) else latestDocs[0]
       latestValues ?= {}
       latestValues = Objects.flattenProperties(latestValues)
       mergedValues = {}
