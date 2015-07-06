@@ -456,10 +456,14 @@ Forms =
       template.formDoc = Form.getInputValues(template)
 
     Form.setUpAutosave = (template) ->
+      # TODO(aramk) This is causing the form to submit and remove fields. Disabled for now.
+      return
+
+      return unless formArgs.autosave
       template = getTemplate(template)
       $form = Form.getElement(template)
       schemaInputs = Form.getSchemaInputs(template)
-      # Changing dropdown fields doesn't trigger a form change.
+      # Changing dropdown fields doesn't trigger a form change so we do it manually.
       _.each schemaInputs, (input, key) ->
         $input = $(input.node)
         return unless Forms.isDropdown($input)
