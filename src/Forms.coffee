@@ -259,12 +259,7 @@ Forms =
       # if Form.isBulk()
       #   Form.setUpBulkFields()
 
-      if @data?.docPromise?
-        Q.when(@data.docPromise).then =>
-          Form.mergeLatestDoc(@)
-          Form.setUpAutosave(@)
-      else
-        Form.setUpAutosave(@)
+      if @data?.docPromise? then Q.when(@data.docPromise).then => Form.mergeLatestDoc(@)
       
       formArgs.onRender?.apply(@, arguments)
 
@@ -471,19 +466,6 @@ Forms =
           Forms.setInputValue($input, value)
       template.formDoc = Form.getInputValues(template)
 
-    # Form.setUpAutosave = (template) ->
-    #   return unless formArgs.autosave
-    #   template = getTemplate(template)
-    #   $form = Form.getElement(template)
-    #   schemaInputs = Form.getSchemaInputs(template)
-    #   # Changing dropdown fields doesn't trigger a form change so we do it manually.
-    #   _.each schemaInputs, (input, key) ->
-    #     $input = $(input.node)
-    #     return unless Forms.isDropdown($input)
-    #     $input.on 'change', ->
-    #       # Avoid submitting the form until the doc promise is resolved.
-    #       Q.when(template.data?.docPromise?).then -> $form.submit()
-    
     Form.getFormTitle = ->
       collectionName = Collections.getTitle(Form.getCollection())
       singularName = Form.getSingularName()
