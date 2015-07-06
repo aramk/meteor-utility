@@ -117,7 +117,7 @@ Collections =
   intersection: (a, b) ->
     result = @createTemporary()
     a.find().forEach (item) ->
-      if b.findOne(item._id)
+      if b.findOne(_id: item._id)
         result.insert(item)
     result
 
@@ -186,7 +186,7 @@ Collections =
     getDestId = (id) -> idMap[id] ? id
     insertWithMap = (srcDoc) ->
       id = getDestId(srcDoc._id)
-      return if dest.findOne(id)
+      return if dest.findOne(_id: id)
       insert(srcDoc).then (insertId) ->
         idMap[srcDoc._id] = insertId
 
@@ -203,7 +203,7 @@ Collections =
           # If the document doesn't exist in the destination, don't track changes from the source.
           # Default to the same ID if no mapping is found.
           id = getDestId(newDoc._id)
-          if dest.findOne(id)
+          if dest.findOne(_id: id)
             dest.remove(id)
             insertWithMap(newDoc)
         removed: (oldDoc) ->
@@ -225,7 +225,7 @@ Collections =
 ####################################################################################################
 
   moveDoc: (id, sourceCollection, destCollection) ->
-    order = sourceCollection.findOne(id)
+    order = sourceCollection.findOne(_id: id)
     unless order
       throw new Error('Could not find doc with id ' + id + ' in collection ' + sourceCollection)
     destCollection.insert order, (err, result) ->
@@ -238,7 +238,7 @@ Collections =
 
   duplicateDoc: (docOrId, collection) ->
     df = Q.defer()
-    doc = if Types.isObject(docOrId) then docOrId else collection.findOne(docOrId)
+    doc = if Types.isObject(docOrId) then docOrId else collection.findOne(_id: docOrId)
     delete doc._id
     collection.insert doc, (err, result) -> if err then df.reject(err) else df.resolve(result)
     df.promise
@@ -266,7 +266,7 @@ Collections =
     # This is synchronous since it's a local collection.
     insertedId = tmpCollection.insert(doc)
     tmpCollection.update(insertedId, modifier)
-    tmpCollection.findOne(insertedId)
+    tmpCollection.findOne(_id: insertedId)
 
   # @param {String|Meteor.Collection|Cursor} arg
   # @param {Object} selector
@@ -276,7 +276,7 @@ Collections =
     collection = @get(arg)
     unless collection
       throw new Error('No collection provided')
-    doc = collection.findOne(selector)
+    doc = collection.findOne(_id: selector)
     if doc
       collection.update(doc._id, modifier, callback)
     else
