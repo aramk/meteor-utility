@@ -291,13 +291,14 @@ Forms =
       template = getTemplate(template)
       docs ?= Form.getDocs(template)
       otherDocs = docs.slice(1)
+      if _.isEmpty(otherDocs)
+        throw new Error('At least 2 documents are needed for bulk values.')
       getValue = (doc, key) -> Objects.getModifierProperty(doc, key)
       # Populate all form fields with any common values across docs if possible.
       fields = Collections.getFields(Form.getCollection())
       _.each fields, (field, fieldId) ->
         commonValue = getValue(docs[0], fieldId)
-        hasCommonValue = _.all otherDocs, (doc) ->
-          commonValue == getValue(doc, fieldId)
+        hasCommonValue = _.all otherDocs, (doc) -> commonValue == getValue(doc, fieldId)
         if hasCommonValue && commonValue?
           Objects.setModifierProperty(values, fieldId, commonValue)
       values
@@ -450,8 +451,9 @@ Forms =
         field = input.field
         if field.type == Number && field.decimal && formArgs.roundFloats
           decimals = field.decimals ? 2
-          value = Forms.getInputValue($input)
-          value = parseFloat(value).toFixed(2)
+          value = parseFloat Forms.getInputValue($input)
+          return unless Numbers.isDefined(value)
+          value = value.toFixed(2)
           Forms.setInputValue($input, value)
       template.formDoc = Form.getInputValues(template)
 
@@ -516,8 +518,8 @@ Forms =
       keys = _.keys(formDoc)
       changes = {}
       _.each keys, (key) ->
-        formValue = formDoc[key]?.toString().trim() ? ''
-        prevValue = prevFormDoc[key]?.toString().trim() ? ''
+        formValue = Forms._sanitizeCompareValue(formDoc[key])
+        prevValue = Forms._sanitizeCompareValue(prevFormDoc[key])
         if formValue != prevValue
           # Ensure empty values are null.
           changes[key] = formValue || null
@@ -531,23 +533,26 @@ Forms =
       return unless Form.hasDoc(template)
       docs = Form.getDocs(template)
       changedValues = Form.getDocChanges(template)
+      changedValuesKeyMap = {}
+      _.each changedValues, (value, key) -> changedValuesKeyMap[key] = true
       collection = Form.getCollection()
       latestDocs = []
       _.each docs, (doc) ->
         doc = collection.findOne(doc._id)
         if doc? then latestDocs.push(doc)
-      latestValues = if docs.length > 0 then Form.getBulkValues(template, latestDocs) else docs[0]
+      latestValues = if docs.length > 1 then Form.getBulkValues(template, latestDocs) else docs[0]
       latestValues ?= {}
       latestValues = Objects.flattenProperties(latestValues)
-      $form = Forms.getFormElement(template)
       mergedValues = {}
-      _.each latestValues, (value, key) ->
-        if !changedValues[key]? || changedValues[key].toString().trim() != value.toString().trim()
-          $input = Forms.getFieldElement(key, $form)
+      _.each Form.getSchemaInputs(template), (input, key) ->
+        $input = $(input.node)
+        value = latestValues[key]
+        # Update the form values to the latest doc values if the user has not changed them since the
+        # last merge.
+        if !changedValuesKeyMap[key]?
           # Not all values in the document need to be included in the form. Only record those which
           # are.
-          if Forms.setInputValue($input, value)
-            mergedValues[key] = value
+          if Forms.setInputValue($input, value) then mergedValues[key] = value
       Form.setUpFields(template)
       mergedValues
 
@@ -605,8 +610,9 @@ Forms =
   # @returns {Boolean} Whether the given value was successfully applied to the given input element.
   #     This is false if the value is unchanged.
   setInputValue: ($input, value) ->
-    changed = @getInputValue($input)
-    return false if value == changed
+    oldValue = @getInputValue($input)
+    isChanged = Forms._sanitizeCompareValue(value) != Forms._sanitizeCompareValue(oldValue)
+    return false unless isChanged
     if @isSelectInput($input)
       @setSelectValue($input, value)
     else if @isCheckbox($input)
@@ -618,10 +624,14 @@ Forms =
   getInputValue: ($input) ->
     if @isSelectInput($input)
       @getSelectValue($input)
+    else if @isDropdown($input)
+      Template.dropdown.getValue($input)
     else if @isCheckbox($input)
       $input.prop('checked')
     else
       $input.val()
+
+  _sanitizeCompareValue: (value) -> value?.toString().trim() ? ''
 
   getInputId: ($input) -> $input.attr('data-schema-key')
 
