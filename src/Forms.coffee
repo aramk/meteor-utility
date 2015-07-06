@@ -45,12 +45,20 @@ Forms =
 
       before:
         update: (modifier) ->
+          template = getTemplate(@template)
+          # TODO(aramk) This won't run if we use Setter.merge() below to merge hooks and
+          # this default hook is replaced by a particular form.
+
+          # Prevent change events in the inputs during loading from submitting the form until
+          # the doc promise is resolved and the form is considered loaded.
+          return false if Q.isPending(template.data?.docPromise?)
+
           # TODO(aramk) This can result in modifier being empty and fail during submission.
           # TODO(aramk) Sometimes form fields are skipped when retrieving their values.
           if formArgs.submitDiff
             # Remove fields in the modifiers which haven't been changed.
             # $input = $(@autoSaveChangedElement)
-            changes = Form.getDocChanges(@template)
+            changes = Form.getDocChanges(template)
             _.each ['$set', '$unset'], (propName) ->
               fields = modifier[propName]
               if fields?
@@ -463,16 +471,18 @@ Forms =
           Forms.setInputValue($input, value)
       template.formDoc = Form.getInputValues(template)
 
-    Form.setUpAutosave = (template) ->
-      return unless formArgs.autosave
-      template = getTemplate(template)
-      $form = Form.getElement(template)
-      schemaInputs = Form.getSchemaInputs(template)
-      # Changing dropdown fields doesn't trigger a form change so we do it manually.
-      _.each schemaInputs, (input, key) ->
-        $input = $(input.node)
-        return unless Forms.isDropdown($input)
-        $input.on 'change', -> $form.submit()
+    # Form.setUpAutosave = (template) ->
+    #   return unless formArgs.autosave
+    #   template = getTemplate(template)
+    #   $form = Form.getElement(template)
+    #   schemaInputs = Form.getSchemaInputs(template)
+    #   # Changing dropdown fields doesn't trigger a form change so we do it manually.
+    #   _.each schemaInputs, (input, key) ->
+    #     $input = $(input.node)
+    #     return unless Forms.isDropdown($input)
+    #     $input.on 'change', ->
+    #       # Avoid submitting the form until the doc promise is resolved.
+    #       Q.when(template.data?.docPromise?).then -> $form.submit()
     
     Form.getFormTitle = ->
       collectionName = Collections.getTitle(Form.getCollection())
