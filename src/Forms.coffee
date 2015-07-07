@@ -10,6 +10,8 @@ Forms =
     unless Form
       throw new Error 'No template defined with name ' + name
 
+    Form.getSettings = -> Setter.clone(formArgs)
+
     ################################################################################################
     # HOOKS
     ################################################################################################
