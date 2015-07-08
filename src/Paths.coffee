@@ -48,4 +48,4 @@ Paths =
 
   removeQuery: (url) -> url.replace /\?.*/, ''
 
-  isUrl: (path) -> path? && path.indexOf('://') >= 0
+  isUrl: (path) -> Types.isString(path) && path.indexOf('://') >= 0
