@@ -171,7 +171,7 @@ Forms =
 
     origCreated = Form.created
     Form.created = ->
-      origCreated?()
+      origCreated?.apply(@, arguments)
       @settings = @data?.settings ? {}
       Form.setUpDocs(@)
       if Form.isReactive() then Form.setUpReactivity()
@@ -180,7 +180,7 @@ Forms =
 
     origRendered = Form.rendered
     Form.rendered = ->
-      origRendered?()
+      origRendered?.apply(@, arguments)
       # Move the buttons to the same level as the title and content to allow using flex-layout.
       $buttons = @$('.crud.buttons')
       $crudForm = @$('.flex-panel:first')
