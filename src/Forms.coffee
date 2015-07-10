@@ -171,16 +171,15 @@ Forms =
 
     origCreated = Form.created
     Form.created = ->
-      origCreated?.apply(@, arguments)
       @settings = @data?.settings ? {}
       Form.setUpDocs(@)
       if Form.isReactive() then Form.setUpReactivity()
       @isSubmitting = false
       formArgs.onCreate?.apply(@, arguments)
+      origCreated?.apply(@, arguments)
 
     origRendered = Form.rendered
     Form.rendered = ->
-      origRendered?.apply(@, arguments)
       # Move the buttons to the same level as the title and content to allow using flex-layout.
       $buttons = @$('.crud.buttons')
       $crudForm = @$('.flex-panel:first')
@@ -194,6 +193,7 @@ Forms =
         $submit.click =>
           Logger.debug('Submitting form...', formArgs)
           $form.submit()
+      origRendered?.apply(@, arguments)
 
       schemaInputs = Form.getSchemaInputs(@)
 
