@@ -174,9 +174,9 @@ Collections =
     insert = (srcDoc) ->
       df = Q.defer()
       if beforeInsert
-        result = beforeInsert(srcDoc)
-        return if result == false
-      dest.insert srcDoc, (err, result) -> if err then df.reject(err) else df.resolve(result)
+        srcDoc = beforeInsert(srcDoc)
+        return if srcDoc == false
+      dest.insert srcDoc, Promises.toCallback(df)
       df.promise
     # Collection2 may not allow inserting a doc into a collection with a predefined _id, so we
     # store a map of src to dest IDs. If a copied doc is removed in the destination, this will
@@ -187,8 +187,7 @@ Collections =
     insertWithMap = (srcDoc) ->
       id = getDestId(srcDoc._id)
       return if dest.findOne(_id: id)
-      insert(srcDoc).then (insertId) ->
-        idMap[srcDoc._id] = insertId
+      insert(srcDoc).then (insertId) -> idMap[srcDoc._id] = insertId
 
     @getCursor(src).forEach (doc) ->
       insertPromises.push(insertWithMap(doc))
