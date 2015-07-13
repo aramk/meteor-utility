@@ -53,7 +53,7 @@ Forms =
 
           # Prevent change events in the inputs during loading from submitting the form until
           # the doc promise is resolved and the form is considered loaded.
-          return false if Q.isPending(template.data?.docPromise?)
+          return false if Q.isPending(Form.whenLoaded(template))
 
           # TODO(aramk) This can result in modifier being empty and fail during submission.
           # TODO(aramk) Sometimes form fields are skipped when retrieving their values.
@@ -175,6 +175,7 @@ Forms =
       Form.setUpDocs(@)
       if Form.isReactive() then Form.setUpReactivity()
       @isSubmitting = false
+      @loadDf = Q.defer()
       formArgs.onCreate?.apply(@, arguments)
       origCreated?.apply(@, arguments)
 
@@ -195,8 +196,14 @@ Forms =
           $form.submit()
       origRendered?.apply(@, arguments)
 
-      schemaInputs = Form.getSchemaInputs(@)
+      # Set a delayed promise for loading the form to prevent submissions before the delay due
+      # to change events fired from the dropdown.
+      _.delay(=> @loadDf.resolve Q.when(@data?.docPromise?).then =>
+          Logger.debug('Loaded form', formArgs.name)
+          @
+        , formArgs.loadDelay ? 1000)
 
+      schemaInputs = Form.getSchemaInputs(@)
       popupInputs = []
       hasRequiredField = false
       _.each schemaInputs, (input, key) ->
@@ -581,6 +588,8 @@ Forms =
         else
           return null
       singular.toLowerCase()
+
+    Form.whenLoaded = (template) -> getTemplate(template).loadDf.promise
 
     # Return the Form to be used as a Template.
     return Form
