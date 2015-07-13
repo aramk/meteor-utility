@@ -1,7 +1,7 @@
 Log =
 
   # The current level of logging.
-  level: 'info'
+  _level: 'info'
 
   _levels:
     off: 0
@@ -16,6 +16,8 @@ Log =
   _showTimetamps: false
 
   setLevel: (level) -> if @_levels[level]? then @level = level
+
+  getLevel: -> @_level
 
   setShowTimestamps: (show) -> @_showTimetamps = show
 
