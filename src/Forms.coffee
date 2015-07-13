@@ -200,7 +200,7 @@ Forms =
       # to change events fired from the dropdown.
       _.delay(=> @loadDf.resolve Q.when(@data?.docPromise?).then =>
           Logger.debug('Loaded form', formArgs.name)
-          @
+          return @
         , formArgs.loadDelay ? 1000)
 
       schemaInputs = Form.getSchemaInputs(@)
