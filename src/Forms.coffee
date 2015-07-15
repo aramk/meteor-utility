@@ -577,6 +577,7 @@ Forms =
       Form.getSubmitButton(template).toggleClass('disabled', !!disabled)
 
     Form.getSubmitButton = (template) ->
+      template = getTemplate(template)
       $form = Forms.getFormElement(template)
       template.$('[type="submit"]', $form)
 
@@ -638,6 +639,14 @@ Forms =
       $input.prop('checked')
     else
       $input.val()
+
+  setInputDisabled: ($input, disabled) ->
+    disabled = disabled == true
+    if Forms.isDropdown($input)
+      $dropdown = $input.closest('.ui.dropdown')
+      $dropdown.toggleClass('disabled', disabled)
+    else
+      $input.prop('readonly', disabled)
 
   _sanitizeCompareValue: (value) -> value?.toString().trim() ? ''
 
