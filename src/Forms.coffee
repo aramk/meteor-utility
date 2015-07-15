@@ -1,7 +1,5 @@
 Forms =
 
-  FIELD_SELECTOR: '.form-group',
-
   defineModelForm: (formArgs) ->
     name = formArgs.name
     Form = Template[name]
@@ -208,8 +206,11 @@ Forms =
       hasRequiredField = false
       _.each schemaInputs, (input, key) ->
         $input = $(input.node)
+        if Forms.isCheckbox($input)
+          # Ensure the tooltip is available on the label as well as the input.
+          $input = $input.parent()
         field = input.field
-        desc = field.desc
+        desc = field.desc ? field.description
         # Add popups to the inputs contain definitions from the schema.
         if desc?
           popupInputs.push($input.data('desc', desc))
