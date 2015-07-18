@@ -174,9 +174,9 @@ Collections =
     insert = (srcDoc) ->
       df = Q.defer()
       if beforeInsert
-        result = beforeInsert(srcDoc)
-        return if result == false
-      dest.insert srcDoc, (err, result) -> if err then df.reject(err) else df.resolve(result)
+        srcDoc = beforeInsert(srcDoc)
+        return if srcDoc == false
+      dest.insert srcDoc, Promises.toCallback(df)
       df.promise
     # Collection2 may not allow inserting a doc into a collection with a predefined _id, so we
     # store a map of src to dest IDs. If a copied doc is removed in the destination, this will
@@ -187,8 +187,7 @@ Collections =
     insertWithMap = (srcDoc) ->
       id = getDestId(srcDoc._id)
       return if dest.findOne(_id: id)
-      insert(srcDoc).then (insertId) ->
-        idMap[srcDoc._id] = insertId
+      insert(srcDoc).then (insertId) -> idMap[srcDoc._id] = insertId
 
     @getCursor(src).forEach (doc) ->
       insertPromises.push(insertWithMap(doc))
@@ -287,6 +286,8 @@ Collections =
 # VALIDATION
 ####################################################################################################
 
+  # Adds a validation method for the given colleciton. NOTE: Use allow() and deny() rules on
+  # collections where possible to remain consistent with the Meteor API.
   # @param {Meteor.Collection} collection
   # @param {Function} validate - A validation method which returns a string on failure or throws
   #      an exception, which causes validation to fail and prevents insert() or update() on the
@@ -315,6 +316,22 @@ Collections =
       result.then(handle, handle)
     else
       handle(result)
+
+  # Simulates the given operation on the given collection. Throws errors on failure or true on
+  # success.
+  # TODO(aramk) This is more complex than currently required. WIP.
+  # validateOperation: (collection, doc, operation, userId) ->
+  #   unless _.contains ['insert', 'update', 'remove'], operation
+  #     throw new Error('Invalid operation: ' + operation)
+  #   if userId == undefined then userId = Meteor.userId()
+  #   method = collection['_validated' + String.toTitleCase(operation)]
+  #   unless method
+  #     throw new Error('No method found for collection ' + @getName(collection) +
+  #         ' and operation "' + operation + '"')
+  #   # Calls the operation on the collection after removing the underlying collection to prevent
+  #   # any side-effects, allowing any validation logic to be executed.
+  #   origMethod = collection._collection[operation]
+  #   collection._collection[operation] = ->
 
 ####################################################################################################
 # SANITIZATION

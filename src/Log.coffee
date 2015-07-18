@@ -1,7 +1,7 @@
 Log =
 
   # The current level of logging.
-  level: 'info'
+  _level: 'info'
 
   _levels:
     off: 0
@@ -15,12 +15,14 @@ Log =
   _loggingOn: true
   _showTimetamps: false
 
-  setLevel: (level) -> if @_levels[level]? then @level = level
+  setLevel: (level) -> if @_levels[level]? then @_level = level
+
+  getLevel: -> @_level
 
   setShowTimestamps: (show) -> @_showTimetamps = show
 
   shouldLog: (level, currentLevel) ->
-    currentLevel ?= @level
+    currentLevel ?= @_level
     # Only logs if the level is less than or equal to the current level
     code = @_levels[level]
     return typeof code != 'undefined' && code <= @_levels[currentLevel]
@@ -48,7 +50,7 @@ Log =
   # Prints the message in `args` to the console function `func` (defaults to `console.log`),
   # prepended with the string `[channel]`.
   msg: (channel, args, func) ->
-    return if @level == 'off'
+    return if @_level == 'off'
     func = Setter.defaultValue(func, console.log)
     # Ensure the message string is at least five characters for prettier printing.
     padding = ''

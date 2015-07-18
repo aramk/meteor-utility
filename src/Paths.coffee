@@ -47,3 +47,5 @@ Paths =
   removeLastSlash: (path) -> path.replace /\/$/, ''
 
   removeQuery: (url) -> url.replace /\?.*/, ''
+
+  isUrl: (path) -> Types.isString(path) && path.indexOf('://') >= 0

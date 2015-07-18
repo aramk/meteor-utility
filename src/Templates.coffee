@@ -9,7 +9,10 @@ Templates =
     templateInstance = templateInstance ? Template.instance()
     unless templateInstance
       throw new Error('No current template found.')
-    view = templateInstance.view
+    if templateInstance instanceof Blaze.TemplateInstance
+      view = templateInstance.view
+    else if templateInstance instanceof Blaze.View
+      view = templateInstance
     unless view
       throw new Error('No view for current template found.')
     viewQueue = [view]

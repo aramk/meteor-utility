@@ -1,7 +1,5 @@
 Forms =
 
-  FIELD_SELECTOR: '.form-group',
-
   defineModelForm: (formArgs) ->
     name = formArgs.name
     Form = Template[name]
@@ -9,6 +7,8 @@ Forms =
       throw new Error 'No name provided for form'
     unless Form
       throw new Error 'No template defined with name ' + name
+
+    Form.getSettings = -> _.extend({}, formArgs)
 
     ################################################################################################
     # HOOKS
@@ -51,7 +51,7 @@ Forms =
 
           # Prevent change events in the inputs during loading from submitting the form until
           # the doc promise is resolved and the form is considered loaded.
-          return false if Q.isPending(template.data?.docPromise?)
+          return false if Q.isPending(Form.whenLoaded(template))
 
           # TODO(aramk) This can result in modifier being empty and fail during submission.
           # TODO(aramk) Sometimes form fields are skipped when retrieving their values.
@@ -169,16 +169,16 @@ Forms =
 
     origCreated = Form.created
     Form.created = ->
-      origCreated?()
       @settings = @data?.settings ? {}
       Form.setUpDocs(@)
       if Form.isReactive() then Form.setUpReactivity()
       @isSubmitting = false
+      @loadDf = Q.defer()
       formArgs.onCreate?.apply(@, arguments)
+      origCreated?.apply(@, arguments)
 
     origRendered = Form.rendered
     Form.rendered = ->
-      origRendered?()
       # Move the buttons to the same level as the title and content to allow using flex-layout.
       $buttons = @$('.crud.buttons')
       $crudForm = @$('.flex-panel:first')
@@ -192,15 +192,25 @@ Forms =
         $submit.click =>
           Logger.debug('Submitting form...', formArgs)
           $form.submit()
+      origRendered?.apply(@, arguments)
+
+      # Set a delayed promise for loading the form to prevent submissions before the delay due
+      # to change events fired from the dropdown.
+      _.delay(=> @loadDf.resolve Q.when(@data?.docPromise?).then =>
+          Logger.debug('Loaded form', formArgs.name)
+          return @
+        , formArgs.loadDelay ? 1000)
 
       schemaInputs = Form.getSchemaInputs(@)
-
       popupInputs = []
       hasRequiredField = false
       _.each schemaInputs, (input, key) ->
         $input = $(input.node)
+        if Forms.isCheckbox($input)
+          # Ensure the tooltip is available on the label as well as the input.
+          $input = $input.parent()
         field = input.field
-        desc = field.desc
+        desc = field.desc ? field.description
         # Add popups to the inputs contain definitions from the schema.
         if desc?
           popupInputs.push($input.data('desc', desc))
@@ -567,6 +577,7 @@ Forms =
       Form.getSubmitButton(template).toggleClass('disabled', !!disabled)
 
     Form.getSubmitButton = (template) ->
+      template = getTemplate(template)
       $form = Forms.getFormElement(template)
       template.$('[type="submit"]', $form)
 
@@ -579,6 +590,8 @@ Forms =
         else
           return null
       singular.toLowerCase()
+
+    Form.whenLoaded = (template) -> getTemplate(template).loadDf.promise
 
     # Return the Form to be used as a Template.
     return Form
@@ -626,6 +639,14 @@ Forms =
       $input.prop('checked')
     else
       $input.val()
+
+  setInputDisabled: ($input, disabled) ->
+    disabled = disabled == true
+    if Forms.isDropdown($input)
+      $dropdown = $input.closest('.ui.dropdown')
+      $dropdown.toggleClass('disabled', disabled)
+    else
+      $input.prop('readonly', disabled)
 
   _sanitizeCompareValue: (value) -> value?.toString().trim() ? ''
 
