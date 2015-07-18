@@ -6,6 +6,14 @@ Dates =
 
   toTime: (date) -> moment(date).format('h:mm:ss A')
 
+  formatRange: (startDate, endDate) ->
+    startDateStr = moment(startDate).format('ddd Do MMM YYYY')
+    endDateStr = moment(endDate).format('ddd Do MMM YYYY')
+    startStr = Dates.toTime(startDate)
+    unless startDateStr == endDateStr then startStr += ', ' + startDateStr
+    endStr = Dates.toTime(endDate) + ', ' + endDateStr
+    startStr + ' - ' + endStr
+
   toIdentifier: (date) -> moment(date).format().replace(/[^\w-]+/g, '-')
 
   # @returns {String} The current timezone offset in ISO-8601 format (e.g. +01:00).
