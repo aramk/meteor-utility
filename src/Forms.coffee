@@ -396,6 +396,7 @@ Forms =
       template.getReactiveDoc = Form.getReactiveDoc.bind(template)
       # If no docs exist, no reactive updates can occur on them.
       return unless docs.length > 0
+      docIds = _.map docs, (doc) -> doc._id
       docIdMap = {}
       _.each docs, (doc) -> docIdMap[doc._id] = true
       collection = Form.getCollection()
@@ -406,11 +407,9 @@ Forms =
       updateDocs = _.debounce _updateDocs, 500
       # Check if the doc has changed and ensure the current form is not submitting to prevent
       # self-detection.
-      docHasChanged = (doc) -> docIdMap[doc._id]?
       template.autorun ->
-        Collections.observe collection,
+        Collections.observe collection.find(_id: {$in: docIds}),
           changed: (doc) ->
-            return unless docHasChanged(doc)
             merge = true
             if formArgs.reactiveAutoMerge == false
               merge = confirm('The ' + singularName + ' being edited by this form has been
@@ -418,7 +417,6 @@ Forms =
             if merge then Form.mergeLatestDoc(template)
             updateDocs()
           deleted: (doc) ->
-            return unless docHasChanged(doc)
             alert('The ' + singularName + ' being edited by this form has been removed.')
             updateDocs()
             # TODO(aramk) Change the form to insert.

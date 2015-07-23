@@ -16,7 +16,7 @@ class DeferredQueue
     fin = => @queue.shift()
     execute = Meteor.bindEnvironment =>
       # If the promise is fulfilled due to a clear() then avoid running the callback.
-      if df.promise.isFulfilled() then return
+      unless df.promise.isPending() then return
       try
         df.resolve(callback())
       catch e
