@@ -390,15 +390,14 @@ Forms =
 
     Form.setUpReactivity = (template) ->
       template = getTemplate(template)
+      Form.updateDocs(template)
       docs = Form.getDocs()
-      doc = template.data?.doc
+      doc = docs[0]
       template.reactiveDoc = new ReactiveVar(doc)
       template.getReactiveDoc = Form.getReactiveDoc.bind(template)
       # If no docs exist, no reactive updates can occur on them.
       return unless docs.length > 0
       docIds = _.map docs, (doc) -> doc._id
-      docIdMap = {}
-      _.each docs, (doc) -> docIdMap[doc._id] = true
       collection = Form.getCollection()
       singularName = Form.getSingularName()
       _updateDocs = ->
