@@ -79,3 +79,13 @@ Strings =
   encodeUtf8: (str) -> unescape(encodeURIComponent(str))
 
   decodeUtf8: (str) -> decodeURIComponent(escape(str))
+
+  fromData: (data) ->
+    if !data?
+      ''
+    else if Types.isString(data)
+      data
+    else if Types.isObjectLiteral(data) || Types.isArray(data)
+      JSON.stringify(data)
+    else
+      data.toString()
