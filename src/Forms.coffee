@@ -390,6 +390,7 @@ Forms =
 
     Form.setUpReactivity = (template) ->
       template = getTemplate(template)
+      # Ensure the latest version of the doc is stored in data.doc.
       Form.updateDocs(template)
       docs = Form.getDocs()
       doc = docs[0]
