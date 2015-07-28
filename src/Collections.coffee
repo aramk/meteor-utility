@@ -174,8 +174,11 @@ Collections =
     insert = (srcDoc) ->
       df = Q.defer()
       if beforeInsert
-        srcDoc = beforeInsert(srcDoc)
-        return if srcDoc == false
+        resultDoc = beforeInsert(srcDoc)
+        if resultDoc == false
+          return
+        else if Types.isObjectLiteral(resultDoc)
+          srcDoc = resultDoc
       dest.insert srcDoc, Promises.toCallback(df)
       df.promise
     # Collection2 may not allow inserting a doc into a collection with a predefined _id, so we
