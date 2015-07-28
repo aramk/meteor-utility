@@ -194,13 +194,6 @@ Forms =
           $form.submit()
       origRendered?.apply(@, arguments)
 
-      # Set a delayed promise for loading the form to prevent submissions before the delay due
-      # to change events fired from the dropdown.
-      _.delay(=> @loadDf.resolve Q.when(@data?.docPromise?).then =>
-          Logger.debug('Loaded form', formArgs.name)
-          return @
-        , formArgs.loadDelay ? 1000)
-
       schemaInputs = Form.getSchemaInputs(@)
       popupInputs = []
       hasRequiredField = false
@@ -269,7 +262,21 @@ Forms =
       # if Form.isBulk()
       #   Form.setUpBulkFields()
 
-      if @data?.docPromise? then Q.when(@data.docPromise).then => Form.mergeLatestDoc(@)
+      resolveFormLoaded = => 
+        # Set a delayed promise for loading the form to prevent submissions before the delay due
+        # to change events fired from the dropdown.
+        _.delay =>
+          Logger.debug('Loaded form', formArgs.name)
+          @loadDf.resolve(docPromise)
+        , formArgs.loadDelay ? 1000
+
+      if @data?.docPromise?
+        docPromise = Q.when(@data.docPromise)
+        docPromise.then =>
+          Form.mergeLatestDoc(@)
+          resolveFormLoaded()
+      else
+        resolveFormLoaded()
       
       formArgs.onRender?.apply(@, arguments)
 
