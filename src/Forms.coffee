@@ -273,6 +273,10 @@ Forms =
       if @data?.docPromise?
         docPromise = Q.when(@data.docPromise)
         docPromise.then =>
+          # Ensure all documents are loaded if they weren't available until the docPromise was
+          # resolved.
+          Form.setUpDocs(@)
+          Form.updateDocs(@)
           Form.mergeLatestDoc(@)
           resolveFormLoaded()
       else
@@ -291,7 +295,8 @@ Forms =
     # BULK EDITING
     ################################################################################################
 
-    Form.getDocs = (template) -> getTemplate(template).docs
+    Form.getDocs = (template) ->
+        _.filter _.values(getTemplate(template).docs.get()), (value) -> value?
 
     Form.hasDoc = (template) -> Form.getDocs(template).length > 0
     
@@ -399,13 +404,13 @@ Forms =
       template = getTemplate(template)
       # Ensure the latest version of the doc is stored in data.doc.
       Form.updateDocs(template)
-      docs = Form.getDocs()
-      doc = docs[0]
+      docs = template.docs.get()
+      docIds = _.keys(docs)
+      doc = docs[docIds[0]]
       template.reactiveDoc = new ReactiveVar(doc)
       template.getReactiveDoc = Form.getReactiveDoc.bind(template)
       # If no docs exist, no reactive updates can occur on them.
-      return unless docs.length > 0
-      docIds = _.map docs, (doc) -> doc._id
+      return unless docIds.length > 0
       collection = Form.getCollection()
       singularName = Form.getSingularName()
       _updateDocs = ->
@@ -434,37 +439,51 @@ Forms =
     # AUXILIARY
     ################################################################################################
 
+    updateDataDocs = (template) ->
+      data = template.data ?= {}
+      doc = Form.getValues(template)
+      if doc? then data.doc = doc
+      docs = template.docs.get()
+      if data.docs? then data.docs = _.keys(docs)
+
     Form.setUpDocs = (template) ->
       template = getTemplate(template)
-      data = template.data ? {}
-      template.docs = Form.parseDocs(template)
-      data.doc = Form.getValues(template)
+      docs = Form.parseDocs(template)
+      template.docs ?= new ReactiveVar({})
+      template.docs.set(docs)
+      updateDataDocs(template)
 
     Form.updateDocs = (template) ->
       collection = Form.getCollection()
       return unless collection
       template = getTemplate(template)
       data = template.data ? {}
-      docs = _.map template.docs, (doc) -> collection.findOne(_id: doc._id)
-      template.docs = docs
-      data.doc = Form.getValues(template)
-      if data.docs?
-        data.docs = _.map docs, (doc) -> doc._id
+      docs = template.docs.get()
+      _.each docs, (doc, docId) ->
+        docs[docId] = collection.findOne(_id: docId)
+      template.docs.set(docs)
+      updateDataDocs(template)
 
     Form.parseDocs = (template) ->
       template = getTemplate(template)
       data = template.data ? {}
-      if data.docs?
+      if template.docs?
+        docs = _.keys(template.docs.get())
+      else if data.docs?
         docs = data.docs
       else if data.doc?
         docs = [data.doc]
       else
         docs = []
-      _.map docs, (doc) ->
+      parsedDocs = {}
+      _.each docs, (doc) ->
         if Types.isString(doc)
-          Form.getCollection().findOne(doc)
+          docId = doc
+          doc = Form.getCollection().findOne(docId)
         else
-          doc
+          docId = doc._id
+        parsedDocs[docId] = doc
+      parsedDocs
 
     Form.setUpFields = (template) ->
       template = getTemplate(template)
