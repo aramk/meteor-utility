@@ -253,7 +253,7 @@ Collections =
     Tracker.nonreactive ->
       docs = collection.find().fetch()
     _.each docs, (doc) ->
-      collection.remove(doc._id)
+    collection.remove(doc._id)
 
   # @param {Object} doc
   # @param {Object} modifier - A MongoDB modifier object.
@@ -284,6 +284,16 @@ Collections =
     else
       doc = @simulateModifierUpdate({}, modifier)
       collection.insert(doc, callback)
+
+  # @param {Meteor.Collection|Cursor|Array} docs
+  # @param {Array.<Strings>} ids
+  # @returns {Array.<Object>} The given documents which match the given IDs. This is typically
+  # more efficient than calling <code>find({_id: {$in: ids}})</code> for a large number of ids.
+  filterByIds: (docs, ids) ->
+    docs = @getItems(docs)
+    idMap = {}
+    _.each ids, (id) -> idMap[id] = true
+    _.filter docs, (doc) -> idMap[doc._id]?
 
 ####################################################################################################
 # VALIDATION
