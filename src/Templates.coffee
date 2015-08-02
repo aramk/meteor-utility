@@ -50,9 +50,9 @@ Templates =
           value = parseFloat(value)
           unless Numbers.isDefined(value)
             value = null
-          else if Numbers.isDefined(min) && value < min
+          else if Numbers.isDefined(min) and value < min
             value = min
-          else if Numbers.isDefined(max) && value > max
+          else if Numbers.isDefined(max) and value > max
             value = max
         value
       getValue: -> $(this).val()
@@ -88,18 +88,23 @@ Templates =
     reactiveVar ?= new ReactiveVar()
     options = _.extend({
       template: Template.instance()
+      setSession: (name, value) -> Session.set(name, value)
+      setReactiveVariable: (reactiveVar, value) -> reactiveVar.set(value)
+      getSession: (name) -> Session.get(name)
+      getReactiveVariable: (reactiveVar) -> reactiveVar.get()
     }, options)
     options.template.autorun ->
-      value = Session.get(sessionVarName)
-      reactiveValue = Tracker.nonreactive -> reactiveVar.get()
+      value = options.getSession(sessionVarName)
+      reactiveValue = Tracker.nonreactive -> options.getReactiveVariable(reactiveVar)
       # Prevent setting undefined on an existing reactive variable value if the session has not
       # yet been set.
-      unless value == undefined and reactiveValue? then reactiveVar.set(value)
+      unless value == undefined and reactiveValue?
+        options.setReactiveVariable(reactiveVar, value)
     options.template.autorun ->
-      value = reactiveVar.get()
+      value = options.getReactiveVariable(reactiveVar)
       # Since the reactive variable was only set if the session was defined, the session can be
       # safely set with the reactive variable value.
-      Session.set(sessionVarName, value)
+      options.setSession(sessionVarName, value)
     reactiveVar
 
   get: (templateOrName) ->
