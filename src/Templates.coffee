@@ -91,9 +91,14 @@ Templates =
     }, options)
     options.template.autorun ->
       value = Session.get(sessionVarName)
-      reactiveVar.set(value)
+      reactiveValue = Tracker.nonreactive -> reactiveVar.get()
+      # Prevent setting undefined on an existing reactive variable value if the session has not
+      # yet been set.
+      unless value == undefined and reactiveValue? then reactiveVar.set(value)
     options.template.autorun ->
       value = reactiveVar.get()
+      # Since the reactive variable was only set if the session was defined, the session can be
+      # safely set with the reactive variable value.
       Session.set(sessionVarName, value)
     reactiveVar
 

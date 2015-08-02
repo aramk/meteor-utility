@@ -25,7 +25,10 @@ Objects =
 
   flattenProperties: (obj) ->
     flattened = {}
-    _.each obj, (value, key) =>
+    # Include properties defined with Object.defineProperty.
+    propNames = if obj then Object.getOwnPropertyNames(obj) else []
+    _.each propNames, (key) =>
+      value = obj[key]
       if Types.isObjectLiteral(value)
         _.each @flattenProperties(value), (flatValue, flatKey) ->
           flattened[key + '.' + flatKey] = flatValue
