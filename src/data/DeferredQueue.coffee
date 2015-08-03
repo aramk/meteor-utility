@@ -12,9 +12,9 @@ class DeferredQueue
   waitForAll: -> Q.all _.map @queue, (df) -> df.promise
 
   waitForAllSync: (callback) ->
-    @waitCallbacks.push(df)
+    @waitCallbacks.push(callback)
     @_resolveWaiting()
-    return
+    return undefined
 
   _resolveWaiting: ->
     return unless _.isEmpty(@queue)
