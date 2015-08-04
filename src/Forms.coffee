@@ -44,13 +44,17 @@ Forms =
         deferCallback(successResult, callback)
 
       before:
+        insert: (doc) ->
+          template = getTemplate(@template)
+          # Prevent change events in the inputs during loading from submitting the form until
+          # the doc promise is resolved and the form is considered loaded.
+          return false if Q.isPending(Form.whenLoaded(template))
+
         update: (modifier) ->
           template = getTemplate(@template)
           # TODO(aramk) This won't run if we use Setter.merge() below to merge hooks and
           # this default hook is replaced by a particular form.
 
-          # Prevent change events in the inputs during loading from submitting the form until
-          # the doc promise is resolved and the form is considered loaded.
           return false if Q.isPending(Form.whenLoaded(template))
 
           # TODO(aramk) This can result in modifier being empty and fail during submission.
@@ -296,7 +300,8 @@ Forms =
     ################################################################################################
 
     Form.getDocs = (template) ->
-        _.filter _.values(getTemplate(template).docs.get()), (value) -> value?
+      # For undefined docs which have not yet been resolved, return an empty doc.
+      _.map _.values(getTemplate(template).docs.get()), (value, key) -> value ? {_id: key}
 
     Form.hasDoc = (template) -> Form.getDocs(template).length > 0
     
@@ -415,6 +420,8 @@ Forms =
       singularName = Form.getSingularName()
       _updateDocs = ->
         Form.updateDocs(template)
+        # NOTE: Reactive doc is undefined until doc is loaded, unlike getDoc() which may return
+        # empty docs. This is to aid templates in deciding when to use the reactive doc.
         template.reactiveDoc.set(template.data?.doc)
       updateDocs = _.debounce _updateDocs, 500
       # Check if the doc has changed and ensure the current form is not submitting to prevent
@@ -479,7 +486,7 @@ Forms =
       _.each docs, (doc) ->
         if Types.isString(doc)
           docId = doc
-          doc = Form.getCollection().findOne(docId)
+          doc = Form.getCollection().findOne(_id: docId)
         else
           docId = doc._id
         parsedDocs[docId] = doc
