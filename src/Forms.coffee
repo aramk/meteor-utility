@@ -79,12 +79,12 @@ Forms =
 
       beginSubmit: ->
         template = getTemplate(@template)
-        template.isSubmitting = true
+        template.isSubmitting.set(true) unless formArgs.reactiveSubmittingVar == false
         Form.setSubmitButtonDisabled(true, template)
 
       endSubmit: ->
         template = getTemplate(@template)
-        template.isSubmitting = false
+        template.isSubmitting.set(false) unless formArgs.reactiveSubmittingVar == false
         Form.setSubmitButtonDisabled(false, template)
 
     Form.addHooks = ->
@@ -172,7 +172,7 @@ Forms =
       @settings = @data?.settings ? {}
       Form.setUpDocs(@)
       if Form.isReactive() then Form.setUpReactivity()
-      @isSubmitting = false
+      @isSubmitting = new ReactiveVar(false) unless formArgs.reactiveSubmittingVar == false
       @loadDf = Q.defer()
       formArgs.onCreate?.apply(@, arguments)
       origCreated?.apply(@, arguments)
