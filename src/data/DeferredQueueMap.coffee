@@ -29,8 +29,8 @@ class DeferredQueueMap
     queue = @queues[id]
     unless queue
       callback()
-      return
-    queue.waitForAll(callback)
+      return undefined
+    queue.waitForAllSync(callback)
 
   waitForAllSync: (callback) ->
     count = @size()
@@ -41,6 +41,6 @@ class DeferredQueueMap
       count--
       if count == 0 then callback()
     _.each @queues, (queue, id) => @waitSync(id, eachCallback)
-    return
+    return undefined
 
   size: -> _.keys(@queues).length
