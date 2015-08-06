@@ -284,13 +284,21 @@ Collections =
 
   # @param {Meteor.Collection|Cursor|Array} docs
   # @param {Array.<Strings>} ids
-  # @returns {Array.<Object>} The given documents which match the given IDs. This is typically
-  # more efficient than calling <code>find({_id: {$in: ids}})</code> for a large number of ids.
-  filterByIds: (docs, ids) ->
+  # @param {Object} [options]
+  # @param {Boolean} [options.returnMap=false] - Whether to return a map of filtered IDs to
+  #     documents instead of an array.
+  # @returns {Array.<Object>|Object.<String, Object>} The given documents which match the given IDs.
+  # This is typically more efficient than calling <code>find({_id: {$in: ids}})</code> for a large
+  # number of ids.
+  filterByIds: (docs, ids, options) ->
     docs = @getItems(docs)
     idMap = {}
     _.each ids, (id) -> idMap[id] = true
-    _.filter docs, (doc) -> idMap[doc._id]?
+    docs = _.filter docs, (doc) ->
+      exists = idMap[doc._id]?
+      if options?.returnMap then idMap[doc._id] = doc
+      exists
+    if options?.returnMap then idMap else docs
 
 ####################################################################################################
 # VALIDATION
