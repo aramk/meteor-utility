@@ -64,17 +64,13 @@ Objects =
     _.each obj, (value, key) ->
       if Types.isObject(value)
         branches.push(key)
-    if branches.length == 0
-      callback(obj)
-    else
-      _.each branches, (branch) =>
-        @traverseLeaves(obj[branch])
+    if branches.length == 0 then callback(obj)
+    else _.each branches, (branch) => @traverseLeaves obj[branch], callback
 
   traverseValues: (obj, callback) ->
     _.each obj, (value, key) =>
       callback(value, key)
-      if Types.isObject(value)
-        @traverseValues(value, callback)
+      if Types.isObject(value) then @traverseValues value, callback
 
   inverse: (obj) ->
     result = {}
