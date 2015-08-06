@@ -300,6 +300,15 @@ Collections =
       exists
     if options?.returnMap then idMap else docs
 
+  # @param {String|Meteor.Collection|Cursor} arg
+  # @param {String} id - A document ID.
+  # @returns {Boolean} Whether the given document ID exists in the given collection.
+  hasDoc: (arg, id) ->
+    unless id? then throw new Error('No document ID provided')
+    collection = @get(arg)
+    unless collection then throw new Error('No collection provided')
+    collection._collection._docs.has(id)
+
 ####################################################################################################
 # VALIDATION
 ####################################################################################################
