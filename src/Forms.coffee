@@ -288,9 +288,9 @@ Forms =
       
       formArgs.onRender?.apply(@, arguments)
 
-    oldDestroyed = Form.destroyed
+    origDestroyed = Form.destroyed
     Form.destroyed = ->
-      oldDestroyed?()
+      origDestroyed?.apply(@, arguments)
       template = @
       template.isDestroyed = true
       formArgs.onDestroy?.apply(@, arguments)
