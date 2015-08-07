@@ -299,9 +299,12 @@ Forms =
     # BULK EDITING
     ################################################################################################
 
-    Form.getDocs = (template) ->
+    Form.getDocs = (template, options) ->
       # For undefined docs which have not yet been resolved, return an empty doc.
-      _.map getTemplate(template).docs.get(), (value, key) -> value ? {_id: key}
+      _.map getTemplate(template).docs.get(), (value, key) ->
+        if !value? && options?.sanitizeEmpty != false
+          value = {_id: key}
+        value
 
     Form.hasDoc = (template) -> Form.getDocs(template).length > 0
     
@@ -448,9 +451,10 @@ Forms =
       doc = Form.getValues(template)
       # Avoid setting original data.doc to undefined value.
       if doc? then data.doc = doc
-      # NOTE: Reactive doc is undefined until doc is loaded, unlike getDoc() which may return
-      # empty docs. This is to aid templates in deciding when to use the reactive doc.
-      template.reactiveDoc?.set(doc)
+      # NOTE: Reactive doc is undefined until doc is fully loaded. data.doc must be set to an empty
+      # doc on form creation to ensure the formType is correct.
+      reativeDoc = Form.getValues template, sanitizeEmpty: false
+      template.reactiveDoc?.set(reativeDoc)
       docs = template.docs.get()
       if data.docs? then data.docs = _.keys(docs)
 
@@ -538,11 +542,11 @@ Forms =
       template = getTemplate(template)
       Forms.getSchemaInputs(template, formArgs.schema ? Form.getCollection())
 
-    Form.getValues = (template) ->
+    Form.getValues = (template, options) ->
       if Form.isBulk(template)
         Form.getBulkValues(template)
       else
-        Form.getDocs(template)[0] ? null
+        Form.getDocs(template, options)[0] ? null
 
     # @returns {Object} The diff between the original document and the resulting document from
     #     the current state of the form.
