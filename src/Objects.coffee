@@ -25,7 +25,10 @@ Objects =
 
   flattenProperties: (obj) ->
     flattened = {}
-    _.each obj, (value, key) =>
+    # Include properties defined with Object.defineProperty.
+    propNames = if obj then Object.getOwnPropertyNames(obj) else []
+    _.each propNames, (key) =>
+      value = obj[key]
       if Types.isObjectLiteral(value)
         _.each @flattenProperties(value), (flatValue, flatKey) ->
           flattened[key + '.' + flatKey] = flatValue
@@ -61,17 +64,13 @@ Objects =
     _.each obj, (value, key) ->
       if Types.isObject(value)
         branches.push(key)
-    if branches.length == 0
-      callback(obj)
-    else
-      _.each branches, (branch) =>
-        @traverseLeaves(obj[branch])
+    if branches.length == 0 then callback(obj)
+    else _.each branches, (branch) => @traverseLeaves obj[branch], callback
 
   traverseValues: (obj, callback) ->
     _.each obj, (value, key) =>
       callback(value, key)
-      if Types.isObject(value)
-        @traverseValues(value, callback)
+      if Types.isObject(value) then @traverseValues value, callback
 
   inverse: (obj) ->
     result = {}

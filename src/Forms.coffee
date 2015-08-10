@@ -44,13 +44,17 @@ Forms =
         deferCallback(successResult, callback)
 
       before:
+        insert: (doc) ->
+          template = getTemplate(@template)
+          # Prevent change events in the inputs during loading from submitting the form until
+          # the doc promise is resolved and the form is considered loaded.
+          return false if Q.isPending(Form.whenLoaded(template))
+
         update: (modifier) ->
           template = getTemplate(@template)
           # TODO(aramk) This won't run if we use Setter.merge() below to merge hooks and
           # this default hook is replaced by a particular form.
 
-          # Prevent change events in the inputs during loading from submitting the form until
-          # the doc promise is resolved and the form is considered loaded.
           return false if Q.isPending(Form.whenLoaded(template))
 
           # TODO(aramk) This can result in modifier being empty and fail during submission.
@@ -79,12 +83,12 @@ Forms =
 
       beginSubmit: ->
         template = getTemplate(@template)
-        template.isSubmitting = true
+        template.isSubmitting.set(true) unless formArgs.reactiveSubmittingVar == false
         Form.setSubmitButtonDisabled(true, template)
 
       endSubmit: ->
         template = getTemplate(@template)
-        template.isSubmitting = false
+        template.isSubmitting.set(false) unless formArgs.reactiveSubmittingVar == false
         Form.setSubmitButtonDisabled(false, template)
 
     Form.addHooks = ->
@@ -172,7 +176,7 @@ Forms =
       @settings = @data?.settings ? {}
       Form.setUpDocs(@)
       if Form.isReactive() then Form.setUpReactivity()
-      @isSubmitting = false
+      @isSubmitting = new ReactiveVar(false) unless formArgs.reactiveSubmittingVar == false
       @loadDf = Q.defer()
       formArgs.onCreate?.apply(@, arguments)
       origCreated?.apply(@, arguments)
@@ -193,13 +197,6 @@ Forms =
           Logger.debug('Submitting form...', formArgs)
           $form.submit()
       origRendered?.apply(@, arguments)
-
-      # Set a delayed promise for loading the form to prevent submissions before the delay due
-      # to change events fired from the dropdown.
-      _.delay(=> @loadDf.resolve Q.when(@data?.docPromise?).then =>
-          Logger.debug('Loaded form', formArgs.name)
-          return @
-        , formArgs.loadDelay ? 1000)
 
       schemaInputs = Form.getSchemaInputs(@)
       popupInputs = []
@@ -269,13 +266,31 @@ Forms =
       # if Form.isBulk()
       #   Form.setUpBulkFields()
 
-      if @data?.docPromise? then Q.when(@data.docPromise).then => Form.mergeLatestDoc(@)
+      resolveFormLoaded = => 
+        # Set a delayed promise for loading the form to prevent submissions before the delay due
+        # to change events fired from the dropdown.
+        _.delay =>
+          Logger.debug('Loaded form', formArgs.name)
+          @loadDf.resolve(docPromise)
+        , formArgs.loadDelay ? 1000
+
+      if @data?.docPromise?
+        docPromise = Q.when(@data.docPromise)
+        docPromise.then =>
+          # Ensure all documents are loaded if they weren't available until the docPromise was
+          # resolved.
+          Form.setUpDocs(@)
+          Form.updateDocs(@)
+          Form.mergeLatestDoc(@)
+          resolveFormLoaded()
+      else
+        resolveFormLoaded()
       
       formArgs.onRender?.apply(@, arguments)
 
-    oldDestroyed = Form.destroyed
+    origDestroyed = Form.destroyed
     Form.destroyed = ->
-      oldDestroyed?()
+      origDestroyed?.apply(@, arguments)
       template = @
       template.isDestroyed = true
       formArgs.onDestroy?.apply(@, arguments)
@@ -284,7 +299,12 @@ Forms =
     # BULK EDITING
     ################################################################################################
 
-    Form.getDocs = (template) -> getTemplate(template).docs
+    Form.getDocs = (template, options) ->
+      # For undefined docs which have not yet been resolved, return an empty doc.
+      _.map getTemplate(template).docs.get(), (value, key) ->
+        if !value? && options?.sanitizeEmpty != false
+          value = {_id: key}
+        value
 
     Form.hasDoc = (template) -> Form.getDocs(template).length > 0
     
@@ -392,19 +412,17 @@ Forms =
       template = getTemplate(template)
       # Ensure the latest version of the doc is stored in data.doc.
       Form.updateDocs(template)
-      docs = Form.getDocs()
-      doc = docs[0]
+      docs = template.docs.get()
+      docIds = _.keys(docs)
+      doc = docs[docIds[0]]
       template.reactiveDoc = new ReactiveVar(doc)
       template.getReactiveDoc = Form.getReactiveDoc.bind(template)
       # If no docs exist, no reactive updates can occur on them.
-      return unless docs.length > 0
-      docIds = _.map docs, (doc) -> doc._id
+      return unless docIds.length > 0
       collection = Form.getCollection()
       singularName = Form.getSingularName()
-      _updateDocs = ->
-        Form.updateDocs(template)
-        template.reactiveDoc.set(template.data?.doc)
-      updateDocs = _.debounce _updateDocs, 500
+      updateDocs = -> Form.updateDocs(template)
+      updateDocs = _.debounce updateDocs, 500
       # Check if the doc has changed and ensure the current form is not submitting to prevent
       # self-detection.
       template.autorun ->
@@ -427,37 +445,57 @@ Forms =
     # AUXILIARY
     ################################################################################################
 
+    updateDataDocs = (template) ->
+      template = getTemplate(template)
+      data = template.data ?= {}
+      doc = Form.getValues(template)
+      # Avoid setting original data.doc to undefined value.
+      if doc? then data.doc = doc
+      # NOTE: Reactive doc is undefined until doc is fully loaded. data.doc must be set to an empty
+      # doc on form creation to ensure the formType is correct.
+      reativeDoc = Form.getValues template, sanitizeEmpty: false
+      template.reactiveDoc?.set(reativeDoc)
+      docs = template.docs.get()
+      if data.docs? then data.docs = _.keys(docs)
+
     Form.setUpDocs = (template) ->
       template = getTemplate(template)
-      data = template.data ? {}
-      template.docs = Form.parseDocs(template)
-      data.doc = Form.getValues(template)
+      docs = Form.parseDocs(template)
+      template.docs ?= new ReactiveVar({})
+      template.docs.set(docs)
+      updateDataDocs(template)
 
     Form.updateDocs = (template) ->
       collection = Form.getCollection()
       return unless collection
       template = getTemplate(template)
       data = template.data ? {}
-      docs = _.map template.docs, (doc) -> collection.findOne(_id: doc._id)
-      template.docs = docs
-      data.doc = Form.getValues(template)
-      if data.docs?
-        data.docs = _.map docs, (doc) -> doc._id
+      docs = template.docs.get()
+      _.each docs, (doc, docId) ->
+        docs[docId] = collection.findOne(_id: docId)
+      template.docs.set(docs)
+      updateDataDocs(template)
 
     Form.parseDocs = (template) ->
       template = getTemplate(template)
       data = template.data ? {}
-      if data.docs?
+      if template.docs?
+        docs = _.keys(template.docs.get())
+      else if data.docs?
         docs = data.docs
       else if data.doc?
         docs = [data.doc]
       else
         docs = []
-      _.map docs, (doc) ->
+      parsedDocs = {}
+      _.each docs, (doc) ->
         if Types.isString(doc)
-          Form.getCollection().findOne(doc)
+          docId = doc
+          doc = Form.getCollection().findOne(_id: docId)
         else
-          doc
+          docId = doc._id
+        parsedDocs[docId] = doc
+      parsedDocs
 
     Form.setUpFields = (template) ->
       template = getTemplate(template)
@@ -504,11 +542,11 @@ Forms =
       template = getTemplate(template)
       Forms.getSchemaInputs(template, formArgs.schema ? Form.getCollection())
 
-    Form.getValues = (template) ->
+    Form.getValues = (template, options) ->
       if Form.isBulk(template)
         Form.getBulkValues(template)
       else
-        Form.getDocs(template)[0] ? null
+        Form.getDocs(template, options)[0] ? null
 
     # @returns {Object} The diff between the original document and the resulting document from
     #     the current state of the form.

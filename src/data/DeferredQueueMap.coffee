@@ -2,6 +2,7 @@ class DeferredQueueMap
   
   constructor: (options) ->
     @queues = {}
+    @waitCallbacks = []
     @options = Setter.merge({
       exclusive: false
     }, options)
@@ -23,5 +24,23 @@ class DeferredQueueMap
     queue.waitForAll()
 
   waitForAll: -> Q.all _.map @queues, (queue, id) => @wait(id)
+
+  waitSync: (id, callback) ->
+    queue = @queues[id]
+    unless queue
+      callback()
+      return undefined
+    queue.waitForAllSync(callback)
+
+  waitForAllSync: (callback) ->
+    count = @size()
+    if count == 0
+      callback()
+      return
+    eachCallback = ->
+      count--
+      if count == 0 then callback()
+    _.each @queues, (queue, id) => @waitSync(id, eachCallback)
+    return undefined
 
   size: -> _.keys(@queues).length

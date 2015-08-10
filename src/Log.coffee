@@ -121,3 +121,9 @@ if Meteor?
     if logLevel?
       console.log('Log level:', logLevel)
       Logger.setLevel(logLevel)
+  else if Meteor.isCordova
+    # Cordova console package exists only once 'deviceready' event is fired.
+    $(document).on 'deviceready', ->
+      console = window.console
+      platform = device.platform.toLowerCase()
+      Logger.info('Cordova logger started on platform:', platform)

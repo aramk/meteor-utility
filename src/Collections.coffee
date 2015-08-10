@@ -248,12 +248,9 @@ Collections =
   insertAll: (docs, collection) -> _.each docs, (doc) -> collection.insert(doc)
 
   removeAllDocs: (collection) ->
-    docs = null
     # Non-reactive to ensure this command doesn't re-run when the collection changes.
-    Tracker.nonreactive ->
-      docs = collection.find().fetch()
-    _.each docs, (doc) ->
-      collection.remove(doc._id)
+    docs = Tracker.nonreactive -> collection.find().fetch()
+    _.each docs, (doc) -> collection.remove(doc._id)
 
   # @param {Object} doc
   # @param {Object} modifier - A MongoDB modifier object.
@@ -284,6 +281,33 @@ Collections =
     else
       doc = @simulateModifierUpdate({}, modifier)
       collection.insert(doc, callback)
+
+  # @param {Meteor.Collection|Cursor|Array} docs
+  # @param {Array.<Strings>} ids
+  # @param {Object} [options]
+  # @param {Boolean} [options.returnMap=false] - Whether to return a map of filtered IDs to
+  #     documents instead of an array.
+  # @returns {Array.<Object>|Object.<String, Object>} The given documents which match the given IDs.
+  # This is typically more efficient than calling <code>find({_id: {$in: ids}})</code> for a large
+  # number of ids.
+  filterByIds: (docs, ids, options) ->
+    docs = @getItems(docs)
+    idMap = {}
+    _.each ids, (id) -> idMap[id] = true
+    docs = _.filter docs, (doc) ->
+      exists = idMap[doc._id]?
+      if options?.returnMap then idMap[doc._id] = doc
+      exists
+    if options?.returnMap then idMap else docs
+
+  # @param {String|Meteor.Collection|Cursor} arg
+  # @param {String} id - A document ID.
+  # @returns {Boolean} Whether the given document ID exists in the given collection.
+  hasDoc: (arg, id) ->
+    unless id? then throw new Error('No document ID provided')
+    collection = @get(arg)
+    unless collection then throw new Error('No collection provided')
+    collection._collection._docs.has(id)
 
 ####################################################################################################
 # VALIDATION
