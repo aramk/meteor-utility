@@ -77,7 +77,10 @@ Templates =
   bindVarToCheckbox: ($em, reactiveVar, options) ->
     @bindVarToElement($em, reactiveVar, _.extend({
       getValue: -> $(@).is(':checked')
-      setValue: (value) -> $(@).prop('checked', value)
+      setValue: (value) ->
+        value = !!value
+        wasChecked = $(@).is(':checked')
+        unless wasChecked == value then $(@).prop('checked', value).trigger('change')
     }, options))
 
   bindSessionToElement: ($em, sessionVarName, options) ->
