@@ -175,7 +175,7 @@ Collections =
 
     beforeInsert = args.beforeInsert
     afterInsert = args.afterInsert
-    insert = (srcDoc) ->
+    insert = (srcDoc) =>
       df = Q.defer()
       if beforeInsert
         resultDoc = beforeInsert(srcDoc)
@@ -183,8 +183,23 @@ Collections =
           return
         else if Types.isObjectLiteral(resultDoc)
           srcDoc = resultDoc
-      dest.insert srcDoc, Promises.toCallback(df)
-      if afterInsert then df.promise.then(afterInsert)
+      # If inserting synchronously is possible, do so to ensure afterInsert is called before
+      # any other code has a chance to run in case this is undesirable.
+      isSync = Meteor.isServer or Collections.isTemporary(dest)
+      if isSync
+        try
+          result = dest.insert(srcDoc)
+          afterInsert?(result)
+          df.resolve(result)
+        catch err
+          df.reject(err)
+      else
+        dest.insert srcDoc, (err, result) ->
+          if err
+            df.reject(err)
+          else
+            afterInsert?(result)
+            df.resolve(result)
       df.promise
     # Collection2 may not allow inserting a doc into a collection with a predefined _id, so we
     # store a map of src to dest IDs. If a copied doc is removed in the destination, this will
