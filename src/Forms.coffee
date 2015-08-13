@@ -21,6 +21,11 @@ Forms =
         args = arguments
         template = getTemplate(@template)
         onSubmit = formArgs.onSubmit
+
+        # Prevent change events in the inputs during loading from submitting the form until
+        # the doc promise is resolved and the form is considered loaded.
+        return false if Q.isPending(Form.whenLoaded(template))
+
         result = onSubmit?.apply(@, args)
         callback = => template.settings.onSubmit?.apply(@, args)
         deferCallback(result, callback)
@@ -46,8 +51,6 @@ Forms =
       before:
         insert: (doc) ->
           template = getTemplate(@template)
-          # Prevent change events in the inputs during loading from submitting the form until
-          # the doc promise is resolved and the form is considered loaded.
           return false if Q.isPending(Form.whenLoaded(template))
 
         update: (modifier) ->
@@ -263,9 +266,6 @@ Forms =
         helpMode = Session.get 'helpMode'
         if helpMode then addPopups() else removePopups()
 
-      # if Form.isBulk()
-      #   Form.setUpBulkFields()
-
       resolveFormLoaded = => 
         # Set a delayed promise for loading the form to prevent submissions before the delay due
         # to change events fired from the dropdown.
@@ -371,8 +371,7 @@ Forms =
       _.each Form.getDocs(template), (doc) ->
         df = Q.defer()
         promises.push(df.promise)
-        Form.getCollection().update doc._id, modifier, (err, result) ->
-          if err then df.reject(err) else df.resolve(result)
+        Form.getCollection().update doc._id, modifier, Promises.toCallback(df)
       Q.all(promises).then(
         -> context.done()
         (err) -> context.done(err)
