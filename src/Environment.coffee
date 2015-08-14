@@ -8,9 +8,11 @@ Environment =
       if env?
         env
       else if process.env.ROOT_URL?.indexOf('//localhost:3000') >= 0
-        'development'
+        env = 'development'
       else
-        'production'
+        env = 'production'
+      callback?(env)
+      env
     else
       Promises.serverMethodCall('Environment.get', callback)
 
