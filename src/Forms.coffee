@@ -52,6 +52,7 @@ Forms =
         insert: (doc) ->
           template = getTemplate(@template)
           return false if Q.isPending(Form.whenLoaded(template))
+          doc
 
         update: (modifier) ->
           template = getTemplate(@template)
