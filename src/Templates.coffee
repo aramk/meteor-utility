@@ -38,6 +38,7 @@ Templates =
     $em = $($em)
     if $em.length == 0
       throw new Error('Invalid element')
+    reactiveVar ?= new ReactiveVar()
     unless reactiveVar instanceof ReactiveVar
       throw new Error('Invalid reactive variable')
     isNumber = $em.attr('type') == 'number'
@@ -57,22 +58,35 @@ Templates =
         value
       getValue: -> $(this).val()
       setValue: (value) -> $(this).val(value)
+      setReactiveVariable: (reactiveVar, value) -> reactiveVar.set(value)
+      getReactiveVariable: (reactiveVar) -> reactiveVar.get()
       changeEvents: 'change keyup'
       debounce: true
       delay: 500
     }, options)
     options.template ?= Template.instance()
+
+    initialElementValue = options.unmarshall options.getValue.call($em)
+    intialReactiveValue = options.getReactiveVariable(reactiveVar)
+    # If the element has a value but the reactive variable doesn't, use the element value as the
+    # initial value.
+    if !intialReactiveValue? and initialElementValue?
+      options.setReactiveVariable(reactiveVar, initialElementValue)
+
     options.template.autorun ->
-      value = options.marshall(reactiveVar.get())
-      options.setValue.call($em, value)
+      value = options.getReactiveVariable(reactiveVar)
+      options.setValue.call $em, options.marshall(value)
+    
     update = ->
       value = options.getValue.call($em)
       newValue = options.unmarshall(value)
-      if newValue != reactiveVar.get()
+      if newValue != options.getReactiveVariable(reactiveVar)
         reactiveVar.set(newValue)
     if options.debounce
       update = _.debounce(update, options.delay)
     $em.on(options.changeEvents, update)
+
+    reactiveVar
 
   bindVarToCheckbox: ($em, reactiveVar, options) ->
     @bindVarToElement($em, reactiveVar, _.extend({
@@ -92,8 +106,8 @@ Templates =
     options = _.extend({
       template: Template.instance()
       setSession: (name, value) -> Session.set(name, value)
-      setReactiveVariable: (reactiveVar, value) -> reactiveVar.set(value)
       getSession: (name) -> Session.get(name)
+      setReactiveVariable: (reactiveVar, value) -> reactiveVar.set(value)
       getReactiveVariable: (reactiveVar) -> reactiveVar.get()
     }, options)
     options.template.autorun ->
