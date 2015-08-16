@@ -129,6 +129,7 @@ Collections =
   # @param {Function} [args.removed]
   # @param {Function} [args.triggerExisting=false] - Whether to trigger the added callback for
   # existing docs.
+  # @returns {Object} handle - A handle simliar to the return of the native observe().
   observe: (collection, args) ->
     observing = false
     if Types.isFunction(args)
@@ -160,6 +161,8 @@ Collections =
   # @param {Function} [args.beforeInsert] - A function which is passed each document from the source
   #      before it is inserted into the destination. If false is returned by this function, the
   #      insert is cancelled.
+  # @param {Function} [args.afterInsert] - A function which is passed each document ID from the
+  #      destination after it is inserted into the destination.
   # @returns {Promise} A promise containing the destination collection once all docs have been
   # copied.
   copy: (src, dest, args) ->
@@ -171,7 +174,8 @@ Collections =
     insertPromises = []
 
     beforeInsert = args.beforeInsert
-    insert = (srcDoc) ->
+    afterInsert = args.afterInsert
+    insert = (srcDoc) =>
       df = Q.defer()
       if beforeInsert
         resultDoc = beforeInsert(srcDoc)
@@ -179,7 +183,23 @@ Collections =
           return
         else if Types.isObjectLiteral(resultDoc)
           srcDoc = resultDoc
-      dest.insert srcDoc, Promises.toCallback(df)
+      # If inserting synchronously is possible, do so to ensure afterInsert is called before
+      # any other code has a chance to run in case this is undesirable.
+      isSync = Meteor.isServer or Collections.isTemporary(dest)
+      if isSync
+        try
+          result = dest.insert(srcDoc)
+          afterInsert?(result)
+          df.resolve(result)
+        catch err
+          df.reject(err)
+      else
+        dest.insert srcDoc, (err, result) ->
+          if err
+            df.reject(err)
+          else
+            afterInsert?(result)
+            df.resolve(result)
       df.promise
     # Collection2 may not allow inserting a doc into a collection with a predefined _id, so we
     # store a map of src to dest IDs. If a copied doc is removed in the destination, this will

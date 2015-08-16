@@ -8,14 +8,14 @@ Types =
 
   isObject: (object) -> object && typeof object == 'object'
 
-  isObjectLiteral: (object) -> this.isType(object, 'Object')
+  isObjectLiteral: (object) -> @isType(object, 'Object')
 
   isFunction: (object) -> typeof object == 'function'
 
-  isArray: (object) -> this.isType(object, 'Array')
+  isArray: (object) -> @isType(object, 'Array')
 
-  isString: (object) -> this.isType(object, 'String')
+  isString: (object) -> @isType(object, 'String')
 
-  isBoolean: (object) -> this.isType(object, 'Boolean')
+  isBoolean: (object) -> @isType(object, 'Boolean')
 
-  isNumber: (object) -> !isNaN(object) && this.isType(object, 'Number')
+  isNumber: (object) -> !isNaN(object) && @isType(object, 'Number')

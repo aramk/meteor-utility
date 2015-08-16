@@ -89,6 +89,9 @@ Log =
     else if @shouldLog('time')
       console.timeEnd(name)
 
+  # Tracking events for analytics.
+  track: -> @msg('TRACK', arguments, console.debug)
+
 # Allows setting the logging level via GET variable
 if Window?
   logGet = Window.GET('log')

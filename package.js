@@ -28,6 +28,8 @@ Package.onUse(function(api) {
     'momentjs:moment@2.10.3',
     'matb33:collection-hooks@0.7.6',
     'semantic:ui-css@1.11.5',
+    'session@1.1.0',
+    'reactive-var@1.0.5'
   ], 'client', {weak: true});
   // Either of these will contain the Async module, but we don't want to strongly require either
   // since we don't know which is being used.
