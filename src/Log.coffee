@@ -25,7 +25,7 @@ Log =
     currentLevel ?= @_level
     # Only logs if the level is less than or equal to the current level
     code = @_levels[level]
-    return typeof code != 'undefined' && code <= @_levels[currentLevel]
+    return code? and code <= @_levels[currentLevel]
 
   # Enables the Log functions if they have been disabled.
   on: ->
@@ -73,23 +73,20 @@ Log =
     console.log(stack)
 
   time: (name, level) ->
-    if level != undefined
-      @_timers[name] =
-        date: Date.now()
-        level: level
-    else if @shouldLog('time')
-      console.time(name)
+    @_timers[name] =
+      date: Date.now()
+      level: level
+    if !level? and @shouldLog('time') then console.time(name)
 
   timeEnd: (name) ->
     timer = @_timers[name]
-    if timer
-      if @shouldLog(timer.level)
-        time = Date.now() - timer.date
-        Log[timer.level](name + ': ' + time + 'ms')
-      delete @_timers[name]
-      return time
+    time = Date.now() - timer.date
+    if @shouldLog(timer.level)
+      Log[timer.level](name + ': ' + time + 'ms')
     else if @shouldLog('time')
       console.timeEnd(name)
+    delete @_timers[name]
+    return time
 
   # Tracking events for analytics.
   track: -> @msg('TRACK', arguments, console.debug)
