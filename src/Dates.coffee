@@ -44,6 +44,8 @@ Dates =
   # @returns {String}
   getCurrent: -> moment().format()
 
+  isValid: (date) -> (date instanceof Date) and !isNaN(date.getTime())
+
   isValidRange: (startDate, endDate) ->
     endDate = moment(endDate)
     startDate = moment(startDate)
