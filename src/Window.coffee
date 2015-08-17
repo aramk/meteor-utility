@@ -36,4 +36,6 @@ Window =
     variable = @GET(name)
     if variable == undefined then undefined else !!parseInt(variable)
 
-  downloadFile: (url) -> location.href = url
+  downloadFile: (url) ->
+    unless url then return Logger.error('Could not download file - no URL provided')
+    location.href = url
