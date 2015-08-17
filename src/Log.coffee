@@ -84,8 +84,10 @@ Log =
     timer = @_timers[name]
     if timer
       if @shouldLog(timer.level)
-        Log[timer.level](name + ': ' + (Date.now() - timer.date) + 'ms')
+        time = Date.now() - timer.date
+        Log[timer.level](name + ': ' + time + 'ms')
       delete @_timers[name]
+      return time
     else if @shouldLog('time')
       console.timeEnd(name)
 
