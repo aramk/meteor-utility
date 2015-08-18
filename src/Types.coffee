@@ -6,16 +6,18 @@ Types =
   isType: (object, type) ->
     if object? then this.getTypeOf(object) == type else object == type
 
-  isObject: (object) -> object && typeof object == 'object'
+  isObject: (object) -> object? and typeof object == 'object' or @isFunction(object) or
+      @isArray(object)
 
-  isObjectLiteral: (object) -> @isType(object, 'Object')
+  isObjectLiteral: (object) -> object? and typeof object == 'object' and !@isFunction(object) and
+      !@isArray(object)
 
   isFunction: (object) -> typeof object == 'function'
 
-  isArray: (object) -> @isType(object, 'Array')
+  isArray: (object) -> Array.isArray?(object) ? @isType(object, 'Array')
 
   isString: (object) -> @isType(object, 'String')
 
   isBoolean: (object) -> @isType(object, 'Boolean')
 
-  isNumber: (object) -> !isNaN(object) && @isType(object, 'Number')
+  isNumber: (object) -> !isNaN(object) and @isType(object, 'Number')

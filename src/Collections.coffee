@@ -155,22 +155,23 @@ Collections =
   # @param {Meteor.Collection} [dest] - If none is provided, a temporary collection is used.
   # @param {Object} [args]
   # @param {Boolean} [args.track=true] - Whether to observe changes in the source and apply them to
-  #      the destination over time.
+  #     the destination over time.
   # @param {Boolean} [args.exclusive=false] - Whether to retain previous observations for copying.
-  #      If true, the existing observation is stopped before the new one starts.
+  #     If true, the existing observation is stopped before the new one starts.
   # @param {Function} [args.beforeInsert] - A function which is passed each document from the source
-  #      before it is inserted into the destination. If false is returned by this function, the
-  #      insert is cancelled.
+  #     before it is inserted into the destination. If false is returned by this function, the
+  #     insert is cancelled.
   # @param {Function} [args.afterInsert] - A function which is passed each document ID from the
-  #      destination after it is inserted into the destination.
+  #     destination after it is inserted into the destination.
   # @returns {Promise} A promise containing the destination collection once all docs have been
-  # copied.
+  #     copied. The destination collection contains a stop() method for stopping the reactive sync.
   copy: (src, dest, args) ->
     args = _.extend({
       track: true,
       exclusive: false
     }, args)
     dest ?= @createTemporary()
+    isSync = Meteor.isServer or Collections.isTemporary(dest)
     insertPromises = []
 
     beforeInsert = args.beforeInsert
@@ -185,7 +186,6 @@ Collections =
           srcDoc = resultDoc
       # If inserting synchronously is possible, do so to ensure afterInsert is called before
       # any other code has a chance to run in case this is undesirable.
-      isSync = Meteor.isServer or Collections.isTemporary(dest)
       if isSync
         try
           result = dest.insert(srcDoc)
@@ -207,13 +207,12 @@ Collections =
     idMap = {}
     # Default to the same ID if no mapping is found.
     getDestId = (id) -> idMap[id] ? id
-    insertWithMap = (srcDoc) ->
+    insertWithMap = (srcDoc) =>
       id = getDestId(srcDoc._id)
-      return if dest.findOne(_id: id)
+      return if Collections.hasDoc(dest, id)
       insert(srcDoc).then (insertId) -> idMap[srcDoc._id] = insertId
 
-    @getCursor(src).forEach (doc) ->
-      insertPromises.push(insertWithMap(doc))
+    @getCursor(src).forEach (doc) -> insertPromises.push insertWithMap(doc)
     if args.track
       if args.exclusive
         # Stop any existing copy.
@@ -328,6 +327,19 @@ Collections =
     collection = @get(arg)
     unless collection then throw new Error('No collection provided')
     collection._collection._docs.has(id)
+
+  getDocChanges: (oldDoc, newDoc) ->
+    oldDoc = Objects.flattenProperties(oldDoc)
+    newDoc = Objects.flattenProperties(newDoc)
+    changes = {}
+    _.each newDoc, (value, key) ->
+      oldValue = oldDoc[key]
+      if !oldValue? or value != oldValue
+        # Change null values to undefined to mark the field as removed.
+        if value == null then value = undefined
+        changes[key] = value
+    _.each oldDoc, (value, key) -> if !newDoc[key]? then changes[key] = undefined
+    changes
 
 ####################################################################################################
 # VALIDATION
