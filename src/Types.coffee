@@ -16,8 +16,8 @@ Types =
 
   isArray: (object) -> Array.isArray?(object) ? @isType(object, 'Array')
 
-  isString: (object) -> @isType(object, 'String')
+  isString: (object) -> typeof object == 'string'
 
-  isBoolean: (object) -> @isType(object, 'Boolean')
+  isBoolean: (object) -> typeof object == 'boolean'
 
-  isNumber: (object) -> !isNaN(object) and @isType(object, 'Number')
+  isNumber: (object) -> typeof object == 'number' and !isNaN(object)
