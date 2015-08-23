@@ -27,7 +27,7 @@ Package.onUse(function(api) {
     'aldeed:autoform@5.1.2',
     'momentjs:moment@2.10.3',
     'matb33:collection-hooks@0.7.6',
-    'semantic:ui-css@1.11.5',
+    'semantic:ui-css@2.0.8',
     'session@1.1.0',
     'reactive-var@1.0.5'
   ], 'client', {weak: true});
