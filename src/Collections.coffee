@@ -326,7 +326,7 @@ Collections =
     unless id? then throw new Error('No document ID provided')
     collection = @get(arg)
     unless collection then throw new Error('No collection provided')
-    collection._collection._docs.has(id)
+    collection._collection?._docs?.has(id) ? false
 
   getDocChanges: (oldDoc, newDoc) ->
     oldDoc = Objects.flattenProperties(oldDoc)
