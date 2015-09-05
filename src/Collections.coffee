@@ -160,7 +160,8 @@ Collections =
   #     If true, the existing observation is stopped before the new one starts.
   # @param {Function} [args.beforeInsert] - A function which is passed each document from the source
   #     before it is inserted into the destination. If false is returned by this function, the
-  #     insert is cancelled.
+  #     insert is cancelled. If an object is returned, it is used as the document. Otherwise the
+  #     source document passed to this function is used.
   # @param {Function} [args.afterInsert] - A function which is passed each document ID from the
   #     destination after it is inserted into the destination.
   # @returns {Promise} A promise containing the destination collection once all docs have been

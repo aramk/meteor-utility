@@ -69,7 +69,7 @@ Objects =
 
   traverseValues: (obj, callback) ->
     _.each obj, (value, key) =>
-      callback(value, key)
+      callback(value, key, obj)
       if Types.isObject(value) then @traverseValues value, callback
 
   inverse: (obj) ->
