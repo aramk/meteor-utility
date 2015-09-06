@@ -26,7 +26,7 @@ Package.onUse(function(api) {
   api.use([
     'aldeed:autoform@5.1.2',
     'momentjs:moment@2.10.3',
-    'matb33:collection-hooks@0.7.6',
+    'matb33:collection-hooks@0.8.0',
     'semantic:ui-css@1.11.5',
     'session@1.1.0',
     'reactive-var@1.0.5'
