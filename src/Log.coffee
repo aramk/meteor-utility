@@ -80,6 +80,7 @@ Log =
 
   timeEnd: (name) ->
     timer = @_timers[name]
+    return unless timer?
     time = Date.now() - timer.date
     if @shouldLog(timer.level)
       Log[timer.level](name + ': ' + time + 'ms')
