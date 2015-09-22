@@ -58,9 +58,13 @@ Collections =
     else
       null
 
-  # @param obj
+  # @param {*) obj
   # @returns {Boolean} Whether the given object is a collection.
-  isCollection: (obj) -> obj instanceof Meteor.Collection || obj instanceof LocalCollection
+  isCollection: (obj) -> 
+    obj instanceof Meteor.Collection || obj instanceof Mongo.Collection ||
+    # Packages may wrap the collection classes causing instanceof checks to fail, so we check the
+    # raw underlying collection as well if it exists.
+    obj instanceof LocalCollection || (obj?._collection? and @isCollection(obj._collection))
 
   # @param obj
   # @returns {Boolean} Whether the given object is a collection cursor.
