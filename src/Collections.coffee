@@ -299,7 +299,7 @@ Collections =
     collection = @get(arg)
     unless collection
       throw new Error('No collection provided')
-    doc = collection.findOne(_id: selector)
+    doc = collection.findOne(selector)
     if doc
       collection.update(doc._id, modifier, callback)
     else

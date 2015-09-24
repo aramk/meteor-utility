@@ -119,6 +119,9 @@ Forms =
           doc = Collections.simulateModifierUpdate(doc, modifier)
           delete doc._id
           doc = formToDoc.call(@, doc)
+          # Remove any keys in $unset which are in the document. Root properties may be present
+          # despite sub-properties beng added in formToDoc.
+          if modifier.$unset then _.each doc, (value, key) -> delete modifier.$unset[key]
           modifier.$set = Objects.flattenProperties(doc)
           # Ensure keys in $set are not present in $unset.
           if modifier.$unset
