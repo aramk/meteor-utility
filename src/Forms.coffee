@@ -560,14 +560,9 @@ Forms =
       # Form doc is the full set of fields which the doc supports. We must avoid creating modifiers
       # containing any other fields, since this form does not affect them.
       keys = _.keys(formDoc)
-      changes = {}
-      _.each keys, (key) ->
-        formValue = Forms._sanitizeCompareValue(formDoc[key])
-        prevValue = Forms._sanitizeCompareValue(prevFormDoc[key])
-        if formValue != prevValue
-          # Ensure empty values are null.
-          changes[key] = formValue || null
-      changes
+      changes = Forms._getObjectChanges(prevFormDoc, formDoc)
+      # Ensure object values are flattened.
+      Objects.flattenProperties(changes)
 
     # Merges the latest document into the form, giving precedence to the changed values in the form.
     # @returns {Object} The flattened properties of the latest document which were merged into the
@@ -608,9 +603,11 @@ Forms =
       $inputs.each ->
         $input = $(@)
         id = Forms.getInputId($input)
-        value = Forms.getInputValue($input)
+        value = Form.getInputValue($input)
         values[id] = value
       values
+
+    Form.getInputValue = ($input) -> Forms.getInputValue($input, Form.getSchema())
 
     Form.setSubmitButtonDisabled = (disabled, template) ->
       Form.getSubmitButton(template).toggleClass('disabled', !!disabled)
@@ -669,8 +666,18 @@ Forms =
       $input.val(value)
     return true
 
-  getInputValue: ($input) ->
-    if @isSelectInput($input)
+  getInputValue: ($input, schema) ->
+    $input = $($input)
+    element = $input[0]
+    return unless element?
+    
+    # Attempt to obtain the value from AutoForm which will also parse it based on the schema and
+    # support custom AutoForm fields.
+    templateName = AutoForm.getInputTypeTemplateNameForElement(element)
+    if templateName
+      AutoForm.getInputValue(element, schema)
+    # Otherwise try to parse it ourselves.
+    else if @isSelectInput($input)
       @getSelectValue($input)
     else if @isDropdown($input)
       Template.dropdown.getValue($input)
@@ -687,7 +694,29 @@ Forms =
     else
       $input.prop('readonly', disabled)
 
-  _sanitizeCompareValue: (value) -> value?.toString().trim() ? ''
+  _sanitizeCompareValue: (value) ->
+    # Ensure whitespace is ignored.
+    if Types.isString(value) then value = value.trim()
+    # Ensure empty values are null.
+    if value? then JSON.stringify(value) else null
+
+  _getObjectChanges: (oldObj, newObj) ->
+    changes = {}
+    # Assumes that the set of keys in newObj is a superset of those in oldObj.
+    _.each newObj, (newValue, key) =>
+      oldValue = oldObj[key]
+      # Recursively find object diffs.
+      if Types.isObject(newValue) and Types.isObject(oldValue)
+        valueChanges = @_getObjectChanges(oldValue, newValue)
+        unless _.isEmpty(valueChanges) then changes[key] = valueChanges
+      else
+        sanitizedNewValue = @_sanitizeCompareValue(newValue)
+        santizedOldValue = @_sanitizeCompareValue(oldValue)
+        # NOTE: Not using _.isEqual() to allow trimming strings and other logic.
+        if sanitizedNewValue != santizedOldValue
+          # Ensure empty values are null. Return the unsanitized value from getInputValue().
+          changes[key] = newValue ? null
+    changes
 
   getInputId: ($input) -> $input.attr('data-schema-key')
 
