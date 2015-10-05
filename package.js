@@ -41,6 +41,9 @@ Package.onUse(function(api) {
     'aldeed:simple-schema@1.3.0',
     'aldeed:collection2@2.3.2'
   ], ['client', 'server']);
+  api.use([
+    'cfs:collection@0.5.5'
+  ], ['client', 'server'], {weak: true});
   // Make these available to the app to allow working with tiem and deferreds.
   api.imply(['momentjs:moment', 'aramk:q'], ['client','server'])
   api.export([
