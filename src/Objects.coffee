@@ -83,3 +83,14 @@ Objects =
       unless !value? or ((Types.isObjectLiteral(value) or Types.isArray()) and _.isEmpty(value))
         flatTrimmed[key] = value
     @unflattenProperties(flatTrimmed)
+
+  # Returns a boolean for whether the given selector object matches the given doc object.
+  isSelectorMatch: (doc, selector) ->
+    _.all selector, (value, field) ->
+      docValue = Objects.getModifierProperty(doc, field)
+      # TODO(aramk) Perform this with Mongo.
+      if Types.isObject(value) and value.$exists?
+        docValue? == value.$exists
+      else
+        # Allow undefined/null values for the comparison value.
+        docValue == value or (!docValue? and !value?)
