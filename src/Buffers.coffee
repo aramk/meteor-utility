@@ -2,8 +2,11 @@ Buffers =
 
   fromStream: (stream) ->
     Promises.runSync (done) ->
+      # TODO(aramk) If stream has ended, we need to use read() sychronously and add it into a
+      # Buffer.
       buffers = []
       stream.on 'data', (buffer) -> buffers.push(buffer)
+      stream.on 'error', (err) -> done(err, null)
       stream.on 'end', -> done(null, Buffer.concat(buffers))
 
   fromArrayBuffer: (arrayBuffer) ->
