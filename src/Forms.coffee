@@ -636,6 +636,8 @@ Forms =
   # STATICS
   ##################################################################################################
 
+  FIELD_SELECTOR: '.form-group'
+
   addRequiredLabel: ($label) ->
     $requiredContent = $('<div class="required"></div>')
     $label.append($requiredContent)
