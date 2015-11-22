@@ -6,6 +6,8 @@ Dates =
 
   toTime: (date) -> moment(date).format('h:mm:ss A')
 
+  formatDate: (date) -> moment(date).format('ddd Do MMM YYYY')
+  
   formatRange: (startDate, endDate) ->
     startDateStr = moment(startDate).format('ddd Do MMM YYYY')
     endDateStr = moment(endDate).format('ddd Do MMM YYYY')
