@@ -377,7 +377,15 @@ Collections =
     # TODO(aramk) The deferred won't run in time since hooks are not asynchronous yet, so it won't
     # prevent the collection methods from being called.
     # https://github.com/matb33/meteor-collection-hooks/issues/71
-    handle = (invalid) -> throw new Error(invalid) if invalid
+    handle = (err) ->
+      return unless err
+      if err instanceof Error
+        throw new Meteor.Error(500, err.message, err.stack)
+      else if err instanceof Meteor.Error
+        throw err
+      else
+        throw new Meteor.Error(500, err)
+    
     if result && result.then
       result.then(handle, handle)
     else
