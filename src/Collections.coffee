@@ -352,7 +352,7 @@ Collections =
 # VALIDATION
 ####################################################################################################
 
-  # Adds a validation method for the given colleciton. NOTE: Use allow() and deny() rules on
+  # Adds a validation method for the given collection. NOTE: Use allow() and deny() rules on
   # collections where possible to remain consistent with the Meteor API.
   # @param {Meteor.Collection} collection
   # @param {Function} validate - A validation method which returns a string on failure or throws
@@ -363,6 +363,7 @@ Collections =
       return if options?.validate == false
       context = {userId: userId, options: options}
       @_handleValidationResult validate.call context, doc
+    
     collection.before.update (userId, doc, fieldNames, modifier, options) =>
       return if options?.validate == false
       doc = @simulateModifierUpdate(doc, modifier)
@@ -371,6 +372,11 @@ Collections =
         fieldNames: fieldNames
         modifier: modifier
         options: options
+      @_handleValidationResult validate.call context, doc
+    
+    collection.before.remove (userId, doc, options) =>
+      return if options?.validate == false
+      context = {userId: userId, options: options}
       @_handleValidationResult validate.call context, doc
 
   _handleValidationResult: (result) ->
