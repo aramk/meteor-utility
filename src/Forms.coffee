@@ -1,3 +1,6 @@
+AutoForm = Package['aldeed:autoform'].AutoForm
+return unless AutoForm
+
 Forms =
 
   defineModelForm: (formArgs) ->
