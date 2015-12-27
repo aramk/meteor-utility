@@ -11,7 +11,7 @@ Package.onUse(function(api) {
     'coffeescript',
     'underscore',
     'minimongo',
-    'stevezhu:lodash@0.2.0',
+    'stevezhu:lodash@3.10.1',
     'aramk:q@1.0.1_1',
     'aramk:tinycolor@1.1.0_1'
   ], ['client', 'server']);
