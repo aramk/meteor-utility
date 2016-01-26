@@ -284,7 +284,7 @@ Collections =
   simulateModifierUpdate: (doc, modifier) ->
     # TODO(aramk) If non-modifier properties are passed, this can result in them being merged at
     # times, though it should be throwing an error in mongo.
-    if Object.keys(modifier).length > 1 && !modifier.$set? && !modifier.$unset?
+    if _.keys(modifier).length > 1 && !modifier.$set? && !modifier.$unset?
       throw new Error('Unexpected keys in modifier.')
     tmpCollection = @createTemporary()
     doc = Setter.clone(doc)
@@ -430,7 +430,7 @@ Collections =
         updatedDoc = @simulateModifierUpdate(doc, modifier)
         Setter.merge(doc, updatedDoc)
 
-    collection.before.update (userId, doc, fieldNames, modifier) ->
+    beforeUpdate = (userId, doc, fieldNames, modifier) ->
       updatedDoc = Collections.simulateModifierUpdate(doc, modifier)
       context = {userId: userId}
       # sanitizedDoc = Setter.clone(updatedDoc)
@@ -441,8 +441,14 @@ Collections =
       # Ensure no fields exist in $unset from $set.
       $unset = modifier.$unset
       if $unset
-        _.each $set, (value, key) ->
+        _.each modifier.$set, (value, key) ->
           delete $unset[key]
+
+    collection.before.update ->
+      beforeUpdate.apply(@, arguments)
+
+    collection.before.upsert (userId, doc, modifier) ->
+      beforeUpdate.call(@, userId, doc, [], modifier)
 
 ####################################################################################################
 # SCHEMAS
