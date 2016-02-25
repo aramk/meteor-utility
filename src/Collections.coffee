@@ -361,7 +361,7 @@ Collections =
   addValidation: (collection, validate) ->
     collection.before.insert (userId, doc, options) =>
       return if options?.validate == false
-      context = {userId: userId, options: options}
+      context = {userId: userId, options: options, action: 'insert'}
       @_handleValidationResult validate.call context, doc
     
     collection.before.update (userId, doc, fieldNames, modifier, options) =>
@@ -372,11 +372,12 @@ Collections =
         fieldNames: fieldNames
         modifier: modifier
         options: options
+        action: 'update'
       @_handleValidationResult validate.call context, doc
     
     collection.before.remove (userId, doc, options) =>
       return if options?.validate == false
-      context = {userId: userId, options: options}
+      context = {userId: userId, options: options, action: 'remove'}
       @_handleValidationResult validate.call context, doc
 
   _handleValidationResult: (result) ->
