@@ -18,7 +18,9 @@ class DeferredQueue
 
   _resolveWaiting: ->
     return unless _.isEmpty(@queue)
-    _.each @waitCallbacks, (callback) -> callback()
+    _.each @waitCallbacks, (callback) ->
+      callback()
+      return
     @waitCallbacks = []
 
   add: (callback) ->
