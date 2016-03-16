@@ -32,8 +32,10 @@ Objects =
       if Types.isObjectLiteral(value)
         _.each @flattenProperties(value), (flatValue, flatKey) ->
           flattened[key + '.' + flatKey] = flatValue
+          return
       else
         flattened[key] = value
+      return
     flattened
 
   getModifierProperty: (obj, property) ->
@@ -74,7 +76,9 @@ Objects =
 
   inverse: (obj) ->
     result = {}
-    _.each obj, (value, key) -> if value? then result[value] = key
+    _.each obj, (value, key) ->
+      if value? then result[value] = key
+      return
     result
 
   trim: (obj) ->

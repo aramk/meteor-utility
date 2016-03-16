@@ -93,6 +93,7 @@ Collections =
     _.each collections, (collection) =>
       name = @getName(collection)
       collectionMap[name] = collection
+      return
     collectionMap
 
   # @param {Object.<String, String>} map - A map of IDs to names of the items.
@@ -141,8 +142,7 @@ Collections =
     if Types.isFunction(args)
       args = {added: args, changed: args, removed: args}
     args = _.extend({triggerExisting: false}, args)
-    createHandler = (handler) ->
-      -> handler.apply(@, arguments) if observing
+    createHandler = (handler) -> -> handler.apply(@, arguments) if observing
     observeArgs = {}
     _.each ['added', 'changed', 'removed'], (methodName) ->
       handler = args[methodName]
@@ -345,6 +345,7 @@ Collections =
         # Change null values to undefined to mark the field as removed.
         if value == null then value = undefined
         changes[key] = value
+      return
     _.each oldDoc, (value, key) -> if !newDoc[key]? then changes[key] = undefined
     changes
 
@@ -442,8 +443,7 @@ Collections =
       # Ensure no fields exist in $unset from $set.
       $unset = modifier.$unset
       if $unset
-        _.each modifier.$set, (value, key) ->
-          delete $unset[key]
+        _.each modifier.$set, (value, key) -> delete $unset[key]
 
     collection.before.update ->
       beforeUpdate.apply(@, arguments)
