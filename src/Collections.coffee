@@ -60,7 +60,7 @@ Collections =
 
   # @param {*) obj
   # @returns {Boolean} Whether the given object is a collection.
-  isCollection: (obj) -> 
+  isCollection: (obj) ->
     FsCollection = FS?.Collection
     obj instanceof Meteor.Collection || obj instanceof Mongo.Collection ||
     # Packages may wrap the collection classes causing instanceof checks to fail, so we check the
@@ -364,7 +364,7 @@ Collections =
       return if options?.validate == false
       context = {userId: userId, options: options, action: 'insert'}
       @_handleValidationResult validate.call context, doc
-    
+
     collection.before.update (userId, doc, fieldNames, modifier, options) =>
       return if options?.validate == false
       doc = @simulateModifierUpdate(doc, modifier)
@@ -375,7 +375,7 @@ Collections =
         options: options
         action: 'update'
       @_handleValidationResult validate.call context, doc
-    
+
     collection.before.remove (userId, doc, options) =>
       return if options?.validate == false
       context = {userId: userId, options: options, action: 'remove'}
@@ -393,7 +393,7 @@ Collections =
         throw err
       else
         throw new Meteor.Error(500, err)
-    
+
     if result && result.then
       result.then(handle, handle)
     else
@@ -465,7 +465,7 @@ Collections =
   forEachFieldSchema: (arg, callback) ->
     schema = Collections.getSchema(arg)
     unless schema
-      throw new Error('Count not determine schema from: ' + arg)
+      throw new Error('Could not determine schema from: ' + arg)
     fieldIds = schema._schemaKeys
     for fieldId in fieldIds
       fieldSchema = schema.schema(fieldId)
@@ -477,5 +477,3 @@ Collections =
     @forEachFieldSchema Collections.getSchema(arg), (field, fieldId) ->
       fields[fieldId] = field
     fields
-
-
