@@ -1,7 +1,7 @@
 Package.describe({
   name: 'aramk:utility',
   summary: 'A collection of utility modules',
-  version: '0.10.0',
+  version: '0.11.0',
   git: 'https://github.com/aramk/meteor-utility.git'
 });
 
@@ -27,7 +27,7 @@ Package.onUse(function(api) {
     'aldeed:autoform@5.1.2',
     'momentjs:moment@2.10.3',
     'matb33:collection-hooks@0.8.0',
-    'semantic:ui-css@1.11.5',
+    'semantic:ui-css@2.0.8',
     'session@1.1.0',
     'reactive-var@1.0.5'
   ], 'client', {weak: true});
