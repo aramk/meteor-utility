@@ -90,7 +90,7 @@ Log =
     return time
 
   # Tracking events for analytics.
-  track: -> @msg('TRACK', arguments, console.debug)
+  track: -> @msg('TRACK', arguments, console.debug) if @shouldLog('debug')
 
 # Allows setting the logging level via GET variable
 if Window?
