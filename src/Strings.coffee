@@ -27,7 +27,7 @@ Strings =
   firstToUpperCase: (str) ->
     str.replace /(^\w)/, (firstChar) -> firstChar.toUpperCase()
 
-  isNumber: (str) -> !/[^\d\.E-]/g.test(str)
+  isNumber: (str) -> Types.isNumber(Numbers.parse(str))
 
 # TODO(aramk) Improve naive pluralize methods.
 
